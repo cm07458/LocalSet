@@ -1,0 +1,2144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Localset — Live Music Near You</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --white: #ffffff;
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --border: #e8eaed;
+  --border-light: #f1f3f4;
+  --text-primary: #1a1a2e;
+  --text-secondary: #5f6368;
+  --text-muted: #9aa0a6;
+  --accent: #1a73e8;
+  --accent-light: #e8f0fe;
+  --accent-green: #1e8e3e;
+  --accent-green-light: #e6f4ea;
+  --accent-red: #d93025;
+  --accent-red-light: #fce8e6;
+  --accent-orange: #f29900;
+  --accent-orange-light: #fef7e0;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.06);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* HEADER */
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  height: 64px;
+  display: flex; align-items: center;
+  padding: 0 24px; gap: 24px;
+}
+
+.logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px; color: var(--text-primary);
+  letter-spacing: -0.3px; white-space: nowrap; flex-shrink: 0;
+}
+.logo span { color: var(--accent); }
+
+.search-wrap { flex: 1; max-width: 440px; position: relative; }
+.search-icon {
+  position: absolute; left: 13px; top: 50%;
+  transform: translateY(-50%); color: var(--text-muted); pointer-events: none;
+}
+.search-input {
+  width: 100%; height: 40px;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 100px; padding: 0 16px 0 40px;
+  font-family: 'DM Sans', sans-serif; font-size: 14px;
+  color: var(--text-primary); outline: none; transition: all 0.2s;
+}
+.search-input:focus { background: white; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.12); }
+.search-input::placeholder { color: var(--text-muted); }
+
+nav { display: flex; gap: 2px; flex-shrink: 0; }
+nav button {
+  background: none; border: none;
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+  color: var(--text-secondary); padding: 8px 14px;
+  border-radius: 100px; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+nav button:hover { background: var(--bg); color: var(--text-primary); }
+nav button.active { background: var(--accent-light); color: var(--accent); }
+
+
+.city-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 100px; padding: 6px 14px;
+  font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
+  position: relative; user-select: none;
+}
+.city-chip:hover { border-color: var(--accent); color: var(--accent); }
+.city-chip.open { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.chevron { transition: transform 0.2s; }
+.city-chip.open .chevron { transform: rotate(180deg); }
+
+.city-dropdown {
+  display: none; position: absolute; top: calc(100% + 8px); right: 0;
+  width: 290px; background: white;
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-lg); z-index: 500; overflow: hidden;
+}
+.city-dropdown.open { display: block; animation: fadeUp 0.18s ease both; }
+.city-dd-head { padding: 12px 16px 8px; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.7px; text-transform: uppercase; color: var(--text-muted);
+  border-bottom: 1px solid var(--border-light); }
+.city-dd-sw { padding: 9px 12px; border-bottom: 1px solid var(--border-light);
+  display: flex; align-items: center; gap: 8px; color: var(--text-muted); }
+.city-dd-si { flex: 1; border: none; outline: none; font-family: "DM Sans", sans-serif;
+  font-size: 13px; color: var(--text-primary); background: none; }
+.city-dd-si::placeholder { color: var(--text-muted); }
+.city-dd-list { max-height: 260px; overflow-y: auto; padding: 6px 0; }
+.city-dd-list::-webkit-scrollbar { width: 4px; }
+.city-dd-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.city-dd-item { padding: 9px 16px; cursor: pointer; display: flex; align-items: center;
+  gap: 10px; transition: background 0.1s; }
+.city-dd-item:hover { background: var(--accent-light); }
+.city-dd-item.active { background: var(--accent-light); }
+.city-dd-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.city-dd-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.city-dd-sub { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+.city-dd-item.active .city-dd-name { color: var(--accent); }
+
+/* LANDING */
+#landingPage {
+  position:fixed; inset:0; z-index:999;
+  background:#fff;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:48px 24px;
+}
+
+.lp-logo {
+  font-family:'DM Serif Display',serif;
+  font-size:36px; color:var(--text-primary);
+  letter-spacing:-0.4px; margin-bottom:6px;
+  
+}
+.lp-logo span { color:var(--accent); }
+
+.lp-sub {
+  font-size:14px; color:var(--text-muted);
+  margin-bottom:52px; 
+}
+
+.lp-grid {
+  display:grid;
+  grid-template-columns:repeat(5, 1fr);
+  gap:0;
+  width:100%; max-width:680px;
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  
+  box-shadow:var(--shadow-md);
+}
+
+.lp-city {
+  padding:22px 16px;
+  text-align:center;
+  cursor:pointer;
+  border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  transition:all 0.15s;
+  background:white;
+  position:relative;
+}
+.lp-city:nth-child(5n) { border-right:none; }
+.lp-city:nth-last-child(-n+5) { border-bottom:none; }
+.lp-city:hover { background:var(--accent-light); }
+.lp-city:hover .lp-city-name { color:var(--accent); }
+.lp-city:hover .lp-city-dot { transform:scale(1.4); }
+
+.lp-city-dot {
+  width:8px; height:8px; border-radius:50%;
+  margin:0 auto 8px;
+  transition:transform 0.15s cubic-bezier(0.34,1.4,0.64,1);
+}
+.lp-city-name {
+  font-size:13px; font-weight:600;
+  color:var(--text-primary); margin-bottom:2px;
+  transition:color 0.15s; white-space:nowrap;
+}
+.lp-city-state {
+  font-size:10px; color:var(--text-muted);
+  letter-spacing:0.4px;
+}
+
+.lp-footer {
+  margin-top:32px;
+  font-size:12px; color:var(--text-muted);
+  
+  display:flex; align-items:center; gap:6px;
+}
+.lp-footer a {
+  color:var(--accent); text-decoration:none; font-weight:500;
+}
+
+@keyframes fadeOut { from{opacity:1} to{opacity:0;transform:scale(0.98)} }
+
+
+/* LAYOUT */
+.app { display: flex; height: calc(100vh - 64px); }
+
+/* SIDEBAR */
+.sidebar {
+  width: 256px; min-width: 256px;
+  background: white; border-right: 1px solid var(--border);
+  overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 0;
+}
+.sidebar::-webkit-scrollbar { width: 0; }
+
+.s-section { padding: 14px 4px; }
+.s-section + .s-section { border-top: 1px solid var(--border-light); }
+
+.s-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.7px;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;
+}
+
+.filter-group { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.fpill {
+  background: none; border: 1.5px solid var(--border);
+  border-radius: 100px; padding: 4px 12px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px;
+  color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+}
+.fpill:hover { border-color: var(--accent); color: var(--accent); }
+.fpill.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+.fpill.green.active { background: var(--accent-green-light); border-color: var(--accent-green); color: var(--accent-green); }
+
+/* Free toggle */
+.free-toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.free-toggle-label { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+.free-toggle {
+  width: 40px; height: 22px;
+  background: var(--border); border: none; border-radius: 100px;
+  cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0;
+  padding: 0;
+}
+.free-toggle.on { background: var(--accent-green); }
+.free-toggle-thumb {
+  width: 16px; height: 16px; background: white; border-radius: 50%;
+  position: absolute; top: 3px; left: 3px;
+  transition: transform 0.2s cubic-bezier(0.34,1.4,0.64,1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.free-toggle.on .free-toggle-thumb { transform: translateX(18px); }
+
+/* Budget slider */
+.budget-wrap { transition: opacity 0.2s; }
+.budget-wrap.dimmed { opacity: 0.35; pointer-events: none; }
+.budget-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.budget-label { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+.budget-val { font-size: 15px; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+.slider-track-wrap { position: relative; height: 20px; display: flex; align-items: center; margin-bottom: 6px; }
+
+.budget-slider {
+  width: 100%; height: 4px;
+  -webkit-appearance: none; appearance: none;
+  background: transparent;
+  outline: none; cursor: pointer; position: relative; z-index: 2;
+}
+.budget-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 18px; height: 18px;
+  border-radius: 50%; background: white;
+  border: 2.5px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(26,115,232,0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+  cursor: grab;
+}
+.budget-slider::-webkit-slider-thumb:active {
+  transform: scale(1.2); cursor: grabbing;
+  box-shadow: 0 2px 8px rgba(26,115,232,0.4);
+}
+.budget-slider::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: white; border: 2.5px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(26,115,232,0.3); cursor: grab;
+}
+.slider-fill {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  height: 4px; background: var(--accent); border-radius: 2px;
+  pointer-events: none; z-index: 1; transition: width 0.05s;
+}
+.slider-track-wrap::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 50%;
+  transform: translateY(-50%); height: 4px;
+  background: var(--border); border-radius: 2px;
+}
+
+.budget-ticks {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: var(--text-muted); font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.splurge-btn {
+  width: 100%; padding: 8px 12px;
+  background: none; border: 1.5px dashed var(--border);
+  border-radius: var(--radius-xs); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+  color: var(--text-muted); transition: all 0.18s;
+}
+.splurge-btn:hover { border-color: var(--accent-orange); color: var(--accent-orange); background: var(--accent-orange-light); }
+.splurge-btn.on {
+  background: var(--accent-orange-light); border-style: solid;
+  border-color: var(--accent-orange); color: var(--accent-orange);
+}
+.splurge-icon { font-size: 14px; }
+
+.date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.dpill {
+  border: 1.5px solid var(--border); border-radius: var(--radius-xs);
+  padding: 7px 4px; text-align: center;
+  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+  color: var(--text-secondary); cursor: pointer; background: none; transition: all 0.15s;
+}
+.dpill:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.dpill.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+/* Artist input */
+.autocomplete-wrap { position: relative; }
+.taste-input {
+  width: 100%; height: 36px;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: var(--radius-xs); padding: 0 12px 0 34px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px;
+  color: var(--text-primary); outline: none; transition: all 0.2s;
+}
+.taste-input:focus { background: white; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.10); }
+.taste-input::placeholder { color: var(--text-muted); }
+.ti-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+
+.ac-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: white; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); box-shadow: var(--shadow-lg);
+  z-index: 300; overflow: hidden; display: none;
+}
+.ac-dropdown.open { display: block; }
+.ac-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 13px; cursor: pointer; transition: background 0.1s;
+  border-bottom: 1px solid var(--border-light);
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover, .ac-item.hl { background: var(--accent-light); }
+.ac-name { font-size: 13px; color: var(--text-primary); }
+.ac-name strong { color: var(--accent); font-weight: 600; }
+.ac-genre { font-size: 11px; color: var(--text-muted); }
+
+.artist-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.artist-tag {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--accent-light); border: 1px solid rgba(26,115,232,0.2);
+  border-radius: 100px; padding: 3px 8px 3px 10px;
+  font-size: 12px; font-weight: 500; color: var(--accent);
+}
+.artist-tag button {
+  background: none; border: none; color: var(--accent);
+  opacity: 0.6; cursor: pointer; display: flex; align-items: center; padding: 0;
+  transition: opacity 0.1s;
+}
+.artist-tag button:hover { opacity: 1; }
+
+.surprise-btn {
+  width: 100%; background: linear-gradient(135deg, var(--accent-light), #ede7fe);
+  border: 1.5px solid rgba(26,115,232,0.2); border-radius: var(--radius-sm);
+  padding: 10px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+  color: var(--accent); cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.surprise-btn:hover { box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+
+/* MAIN */
+.main { flex: 1; overflow-y: auto; background: var(--bg); min-height: 0; }
+.main::-webkit-scrollbar { width: 6px; }
+#showsPanel { min-height: 100%; }
+.content { padding: 24px; padding-bottom: 60px; }
+.main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.toolbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(247,248,250,0.96); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.result-count { font-size: 13px; color: var(--text-secondary); }
+.result-count strong { color: var(--text-primary); font-weight: 600; }
+
+.toolbar-right { display: flex; align-items: center; gap: 8px; }
+.sort-select {
+  background: white; border: 1.5px solid var(--border); border-radius: var(--radius-xs);
+  padding: 5px 10px; font-family: 'DM Sans', sans-serif; font-size: 13px;
+  color: var(--text-secondary); cursor: pointer; outline: none;
+}
+.view-btns { display: flex; background: white; border: 1.5px solid var(--border); border-radius: var(--radius-xs); overflow: hidden; }
+.vbtn {
+  background: none; border: none; width: 32px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text-muted); transition: all 0.15s;
+}
+.vbtn:first-child { border-right: 1px solid var(--border); }
+.vbtn.active { background: var(--accent-light); color: var(--accent); }
+.vbtn:hover:not(.active) { background: var(--bg); color: var(--text-primary); }
+
+.content { padding: 24px; }
+
+.date-section { margin-bottom: 32px; }
+.date-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.date-heading-label { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--text-primary); white-space: nowrap; }
+.date-heading-line { flex: 1; height: 1px; background: var(--border); }
+.date-heading-count { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+
+/* GRID */
+.shows-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 12px; }
+
+.show-card {
+  background: white; border: 1.5px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  cursor: pointer; transition: all 0.2s cubic-bezier(0.34,1.2,0.64,1);
+  animation: fadeUp 0.3s ease both;
+}
+@keyframes fadeUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+.show-card:hover { border-color: var(--accent); box-shadow: var(--shadow-md); transform: translateY(-3px); }
+
+.card-stripe { height: 4px; }
+.card-body { padding: 14px 15px 11px; }
+.card-badges { display: flex; gap: 5px; min-height: 20px; margin-bottom: 7px; }
+.badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 100px; letter-spacing: 0.2px; }
+.badge-free { background: var(--accent-green-light); color: var(--accent-green); }
+.badge-going { background: var(--accent-orange-light); color: var(--accent-orange); }
+.card-artist { font-family: 'DM Serif Display', serif; font-size: 19px; line-height: 1.15; margin-bottom: 3px; }
+.card-support { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; min-height: 17px; }
+.card-meta-row { display: flex; align-items: flex-end; justify-content: space-between; }
+.card-venue { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 1px; }
+.card-time { font-size: 11px; color: var(--text-muted); }
+.card-price { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+.card-price.free { color: var(--accent-green); }
+
+.card-footer {
+  padding: 9px 15px; border-top: 1px solid var(--border-light);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.tag { font-size: 11px; background: var(--bg); color: var(--text-muted); padding: 2px 8px; border-radius: 100px; border: 1px solid var(--border); }
+.card-actions { display: flex; gap: 4px; }
+.icon-btn {
+  width: 28px; height: 28px; background: none;
+  border: 1.5px solid var(--border); border-radius: var(--radius-xs);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text-muted); transition: all 0.15s;
+}
+.icon-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.icon-btn.saved { border-color: var(--accent-red); color: var(--accent-red); background: var(--accent-red-light); }
+.icon-btn.going-on { border-color: var(--accent-green); color: var(--accent-green); background: var(--accent-green-light); }
+
+/* LIST */
+.shows-list { display: flex; flex-direction: column; gap: 2px; }
+.list-item {
+  background: white; border: 1.5px solid transparent; border-radius: var(--radius-sm);
+  padding: 13px 16px; display: flex; align-items: center; gap: 14px;
+  cursor: pointer; transition: all 0.15s; animation: fadeUp 0.25s ease both;
+}
+.list-item:hover { border-color: var(--accent); box-shadow: var(--shadow-sm); }
+.list-stripe { width: 4px; height: 38px; border-radius: 2px; flex-shrink: 0; }
+.list-date { width: 42px; text-align: center; flex-shrink: 0; }
+.list-day { font-family: 'DM Serif Display', serif; font-size: 22px; line-height: 1; color: var(--accent); }
+.list-dow { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+.list-main { flex: 1; min-width: 0; }
+.list-artist { font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--text-primary); margin-bottom: 2px; }
+.list-sub { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-right { text-align: right; flex-shrink: 0; }
+.list-venue { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 3px; }
+.list-price { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.list-price.free { color: var(--accent-green); }
+
+/* FOR YOU */
+.recs-panel { display: none; padding: 24px; }
+.recs-panel.active { display: block; }
+.panel-title { font-family: 'DM Serif Display', serif; font-size: 28px; margin-bottom: 4px; }
+.panel-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; }
+.recs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+.rec-card {
+  background: white; border: 1.5px solid var(--border); border-radius: var(--radius);
+  padding: 18px; cursor: pointer; transition: all 0.2s; animation: fadeUp 0.3s ease both;
+  position: relative; overflow: hidden;
+}
+.rec-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: linear-gradient(90deg,var(--accent),#7c4dff); }
+.rec-card:hover { border-color: var(--accent); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.rec-match { font-size: 11px; font-weight: 600; color: var(--accent); margin-bottom: 7px; }
+.rec-artist { font-family: 'DM Serif Display', serif; font-size: 20px; margin-bottom: 5px; }
+.rec-because { font-size: 12px; color: var(--text-secondary); font-style: italic; margin-bottom: 12px; line-height: 1.5; }
+.rec-shows { font-size: 12px; font-weight: 500; color: var(--accent-green); }
+
+/* MAP */
+.map-panel { display:none; height:100%; position:relative; overflow:hidden; }
+.map-panel.active { display:block; }
+
+#mapCanvas {
+  width:100%; height:100%; display:block;
+  background: #e8eff7;
+  cursor: grab;
+}
+#mapCanvas:active { cursor: grabbing; }
+
+/* Floating top bar */
+.map-topbar {
+  position:absolute; top:16px; left:50%; transform:translateX(-50%);
+  display:flex; align-items:center; gap:8px;
+  background:white; border:1.5px solid var(--border);
+  border-radius:100px; padding:8px 16px;
+  box-shadow: var(--shadow-lg);
+  z-index:20; white-space:nowrap;
+}
+.map-topbar-city {
+  font-size:13px; font-weight:600; color:var(--text-primary);
+}
+.map-topbar-sep { width:1px; height:14px; background:var(--border); }
+.map-topbar-count {
+  font-size:12px; color:var(--text-muted);
+}
+.map-topbar-filter {
+  display:flex; gap:5px; margin-left:4px;
+}
+.map-filter-pill {
+  background:var(--bg); border:1.5px solid var(--border);
+  border-radius:100px; padding:3px 10px;
+  font-size:11px; font-weight:500; color:var(--text-secondary);
+  cursor:pointer; transition:all 0.15s;
+}
+.map-filter-pill:hover { border-color:var(--accent); color:var(--accent); }
+.map-filter-pill.on { background:var(--accent); border-color:var(--accent); color:white; }
+
+/* Zoom controls */
+.map-zoom {
+  position:absolute; right:20px; bottom:120px; z-index:20;
+  display:flex; flex-direction:column; gap:4px;
+}
+.zoom-btn {
+  width:36px; height:36px; background:white;
+  border:1.5px solid var(--border); border-radius:var(--radius-xs);
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; color:var(--text-secondary); cursor:pointer;
+  box-shadow:var(--shadow-sm); transition:all 0.15s; font-weight:300;
+}
+.zoom-btn:hover { border-color:var(--accent); color:var(--accent); box-shadow:var(--shadow-md); }
+
+/* Legend */
+.map-legend-float {
+  position:absolute; left:16px; bottom:16px; z-index:20;
+  background:white; border:1.5px solid var(--border); border-radius:var(--radius-sm);
+  padding:12px 16px; box-shadow:var(--shadow-md);
+  display:flex; flex-direction:column; gap:7px;
+}
+.mleg-row { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-secondary); }
+.mleg-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.mleg-title { font-size:10px; font-weight:600; letter-spacing:0.7px; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px; }
+
+/* Venue card drawer */
+.venue-drawer {
+  position:absolute; bottom:-240px; left:50%; transform:translateX(-50%);
+  width:380px; max-width:calc(100% - 32px);
+  background:white; border-radius:20px 20px 0 0;
+  border:1.5px solid var(--border); border-bottom:none;
+  box-shadow:0 -8px 32px rgba(0,0,0,0.12);
+  z-index:30; padding:20px 22px 28px;
+  transition:bottom 0.32s cubic-bezier(0.34,1.1,0.64,1);
+}
+.venue-drawer.open { bottom:0; }
+.drawer-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 16px; }
+.drawer-close {
+  position:absolute; top:16px; right:16px;
+  width:26px; height:26px; background:var(--bg); border:none; border-radius:50%;
+  color:var(--text-muted); font-size:14px; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all 0.15s;
+}
+.drawer-close:hover { background:var(--border); }
+.drawer-venue-name { font-size:11px; font-weight:600; letter-spacing:0.6px; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px; }
+.drawer-artist { font-family:'DM Serif Display',serif; font-size:24px; color:var(--text-primary); margin-bottom:4px; line-height:1.15; }
+.drawer-meta { font-size:13px; color:var(--text-secondary); margin-bottom:14px; }
+.drawer-tags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:14px; }
+.drawer-btns { display:flex; gap:8px; }
+.drawer-btn {
+  flex:1; padding:9px; border-radius:var(--radius-sm);
+  font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600;
+  cursor:pointer; border:none; transition:all 0.15s;
+}
+.drawer-btn:hover { opacity:0.85; }
+.drawer-btn-primary { background:var(--accent); color:white; }
+.drawer-btn-secondary { background:var(--bg); color:var(--text-secondary); border:1.5px solid var(--border); }
+
+/* Pulse animation for pins */
+@keyframes pinPulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(26,115,232,0.4); }
+  50% { box-shadow:0 0 0 8px rgba(26,115,232,0); }
+}
+
+/* GENERIC PANELS */
+.generic-panel { display:none; padding:24px; }
+.generic-panel.active { display:block; }
+.weekend-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:0; }
+.weekend-day { background:white; border:1.5px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-sm); }
+.wday-head { padding:13px 18px; background:var(--accent-light); border-bottom:1px solid var(--border); font-family:'DM Serif Display',serif; font-size:16px; color:var(--accent); }
+.wshows { padding:14px 18px; display:flex; flex-direction:column; gap:14px; }
+.wshow { display:flex; gap:12px; }
+.wtime { font-size:11px; font-weight:600; color:var(--text-muted); white-space:nowrap; margin-top:3px; min-width:54px; }
+.wname { font-family:'DM Serif Display',serif; font-size:16px; margin-bottom:2px; }
+.wmeta { font-size:11px; color:var(--text-muted); }
+
+/* MODAL */
+.overlay { display:none; position:fixed; inset:0; background:rgba(26,26,46,0.4); backdrop-filter:blur(6px); z-index:1000; align-items:center; justify-content:center; padding:24px; }
+.overlay.open { display:flex; }
+.modal {
+  background:white; border-radius:18px; width:100%; max-width:530px;
+  max-height:88vh; overflow-y:auto;
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0,0,0,0.05);
+  animation: modalIn 0.25s cubic-bezier(0.34,1.4,0.64,1) both;
+}
+@keyframes modalIn { from{opacity:0;transform:scale(0.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+.modal::-webkit-scrollbar { width:0; }
+.m-stripe { height:5px; border-radius:18px 18px 0 0; }
+.m-head { padding:20px 22px 16px; border-bottom:1px solid var(--border-light); position:relative; }
+.m-close { position:absolute; top:16px; right:16px; width:28px; height:28px; background:var(--bg); border:none; border-radius:50%; color:var(--text-muted); font-size:15px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.15s; }
+.m-close:hover { background:var(--border); color:var(--text-primary); }
+.m-venue-line { font-size:12px; font-weight:500; color:var(--text-muted); margin-bottom:5px; display:flex; align-items:center; gap:4px; }
+.m-artist { font-family:'DM Serif Display',serif; font-size:32px; line-height:1.1; margin-bottom:5px; }
+.m-support { font-size:13px; color:var(--text-muted); font-style:italic; margin-bottom:12px; }
+.m-tags { display:flex; gap:5px; flex-wrap:wrap; }
+.m-tag { font-size:11px; font-weight:500; padding:2px 9px; border-radius:100px; background:var(--bg); border:1px solid var(--border); color:var(--text-secondary); }
+.m-body { padding:18px 22px 22px; }
+.info-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+.info-label { font-size:10px; font-weight:600; letter-spacing:0.6px; text-transform:uppercase; color:var(--text-muted); margin-bottom:3px; }
+.info-val { font-size:14px; font-weight:500; color:var(--text-primary); }
+.info-val.green { color:var(--accent-green); }
+.info-val.blue { color:var(--accent); }
+.sl-label { font-size:10px; font-weight:600; letter-spacing:0.6px; text-transform:uppercase; color:var(--text-muted); margin-bottom:9px; }
+.sl-box { background:var(--bg); border:1.5px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; }
+.sl-song { display:flex; align-items:center; gap:11px; padding:9px 13px; border-bottom:1px solid var(--border-light); font-size:13px; transition:background 0.1s; }
+.sl-song:last-child { border-bottom:none; }
+.sl-song:hover { background:white; }
+.sl-num { font-size:11px; color:var(--text-muted); width:16px; flex-shrink:0; font-weight:500; }
+.m-actions { display:flex; gap:7px; margin-top:18px; }
+.mbtn { flex:1; padding:10px; border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all 0.15s; }
+.mbtn:hover { opacity:0.85; transform:translateY(-1px); }
+.mbtn-primary { background:var(--accent); color:white; }
+.mbtn-save { background:var(--bg); color:var(--text-secondary); border:1.5px solid var(--border); }
+.mbtn-save.saved { background:var(--accent-red-light); color:var(--accent-red); border-color:var(--accent-red); }
+.mbtn-going { background:var(--accent-green-light); color:var(--accent-green); border:1.5px solid var(--accent-green); }
+.mbtn-going.going { background:var(--accent-green); color:white; }
+
+/* TOAST */
+.toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(70px);
+  background:var(--text-primary); color:white; padding:9px 18px; border-radius:100px;
+  font-size:13px; font-weight:500; box-shadow:var(--shadow-lg); z-index:9999;
+  opacity:0; transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1); white-space:nowrap;
+}
+.toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+
+/* EMPTY */
+.empty-state { text-align:center; padding:64px 24px; color:var(--text-muted); }
+.empty-icon { font-size:42px; margin-bottom:12px; opacity:0.45; }
+.empty-title { font-family:'DM Serif Display',serif; font-size:22px; color:var(--text-secondary); margin-bottom:5px; }
+.empty-sub { font-size:13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" onclick="goHome()" style="cursor:pointer">local<span>set</span></div>
+  <div class="search-wrap">
+    <svg class="search-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input class="search-input" placeholder="Search artists, venues, genres…">
+  </div>
+  <nav>
+    <button class="active" onclick="switchTab('shows',this)">Shows</button>
+    <button onclick="switchTab('recs',this)">For You</button>
+    <button onclick="switchTab('map',this)">Map</button>
+    <button onclick="switchTab('weekend',this)">Fill Weekend</button>
+    <button onclick="switchTab('wishlist',this)">Wishlist</button>
+  </nav>
+  <div style="position:relative">
+    <div class="city-chip" id="cityChip" onclick="toggleCityDropdown()">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span id="cityChipLabel">New York City</span>
+      <svg class="chevron" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="city-dropdown" id="cityDropdown">
+      <div class="city-dd-head">Switch city</div>
+      <div class="city-dd-sw">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="city-dd-si" id="cityDdSearch" placeholder="Search cities..." oninput="filterCities(this.value)">
+      </div>
+      <div class="city-dd-list" id="cityDdList"></div>
+    </div>
+  </div>
+</header>
+
+<!-- LANDING -->
+<div id="landingPage">
+  <div class="lp-logo">local<span>set</span></div>
+  <div class="lp-sub">Find every live show near you — major venues to dive bars.</div>
+
+  <div class="lp-grid" id="lpGrid">
+    <div class="lp-city" onclick="selectCity('nyc')"><div class="lp-city-dot" style="background:#1a73e8"></div><div class="lp-city-name">New York City</div><div class="lp-city-state">NY</div></div>
+    <div class="lp-city" onclick="selectCity('la')"><div class="lp-city-dot" style="background:#d93025"></div><div class="lp-city-name">Los Angeles</div><div class="lp-city-state">CA</div></div>
+    <div class="lp-city" onclick="selectCity('chicago')"><div class="lp-city-dot" style="background:#1e8e3e"></div><div class="lp-city-name">Chicago</div><div class="lp-city-state">IL</div></div>
+    <div class="lp-city" onclick="selectCity('austin')"><div class="lp-city-dot" style="background:#f29900"></div><div class="lp-city-name">Austin</div><div class="lp-city-state">TX</div></div>
+    <div class="lp-city" onclick="selectCity('nashville')"><div class="lp-city-dot" style="background:#7c4dff"></div><div class="lp-city-name">Nashville</div><div class="lp-city-state">TN</div></div>
+    <div class="lp-city" onclick="selectCity('seattle')"><div class="lp-city-dot" style="background:#00838f"></div><div class="lp-city-name">Seattle</div><div class="lp-city-state">WA</div></div>
+    <div class="lp-city" onclick="selectCity('sf')"><div class="lp-city-dot" style="background:#e52592"></div><div class="lp-city-name">San Francisco</div><div class="lp-city-state">CA</div></div>
+    <div class="lp-city" onclick="selectCity('boston')"><div class="lp-city-dot" style="background:#d93025"></div><div class="lp-city-name">Boston</div><div class="lp-city-state">MA</div></div>
+    <div class="lp-city" onclick="selectCity('philly')"><div class="lp-city-dot" style="background:#1a73e8"></div><div class="lp-city-name">Philadelphia</div><div class="lp-city-state">PA</div></div>
+    <div class="lp-city" onclick="selectCity('denver')"><div class="lp-city-dot" style="background:#1e8e3e"></div><div class="lp-city-name">Denver</div><div class="lp-city-state">CO</div></div>
+    <div class="lp-city" onclick="selectCity('miami')"><div class="lp-city-dot" style="background:#f29900"></div><div class="lp-city-name">Miami</div><div class="lp-city-state">FL</div></div>
+    <div class="lp-city" onclick="selectCity('portland')"><div class="lp-city-dot" style="background:#7c4dff"></div><div class="lp-city-name">Portland</div><div class="lp-city-state">OR</div></div>
+    <div class="lp-city" onclick="selectCity('nola')"><div class="lp-city-dot" style="background:#e52592"></div><div class="lp-city-name">New Orleans</div><div class="lp-city-state">LA</div></div>
+    <div class="lp-city" onclick="selectCity('dc')"><div class="lp-city-dot" style="background:#00838f"></div><div class="lp-city-name">Washington DC</div><div class="lp-city-state">DC</div></div>
+    <div class="lp-city" onclick="selectCity('atlanta')"><div class="lp-city-dot" style="background:#d93025"></div><div class="lp-city-name">Atlanta</div><div class="lp-city-state">GA</div></div>
+  </div>
+
+  <div class="lp-footer">
+    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    More cities coming soon &mdash; <a href="#">request your city</a>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="s-section">
+      <div class="s-label">Date</div>
+      <div class="date-grid">
+        <button class="dpill active" onclick="filterDate(this)">Tonight</button>
+        <button class="dpill" onclick="filterDate(this)">Tomorrow</button>
+        <button class="dpill" onclick="filterDate(this)">Weekend</button>
+        <button class="dpill" onclick="filterDate(this)">This Week</button>
+        <button class="dpill" onclick="filterDate(this)">This Month</button>
+        <button class="dpill" onclick="filterDate(this)">All Shows</button>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-label">Area</div>
+      <div class="filter-group" id="areaFilterGroup">
+        <button class="fpill active" onclick="toggleF(this,'area')">All</button>
+        <button class="fpill" onclick="toggleF(this,'area')">Manhattan</button>
+        <button class="fpill" onclick="toggleF(this,'area')">Brooklyn</button>
+        <button class="fpill" onclick="toggleF(this,'area')">Queens</button>
+        <button class="fpill" onclick="toggleF(this,'area')">Hoboken</button>
+        <button class="fpill" onclick="toggleF(this,'area')">Jersey City</button>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-label">Genre</div>
+      <div class="filter-group">
+        <button class="fpill active" onclick="toggleF(this,'genre')">All</button>
+        <button class="fpill" onclick="toggleF(this,'genre')">Rock</button>
+        <button class="fpill" onclick="toggleF(this,'genre')">Electronic</button>
+        <button class="fpill" onclick="toggleF(this,'genre')">Hip-Hop</button>
+        <button class="fpill" onclick="toggleF(this,'genre')">Jazz</button>
+        <button class="fpill" onclick="toggleF(this,'genre')">Indie</button>
+        <button class="fpill" onclick="toggleF(this,'genre')">Folk</button>
+        <button class="fpill" onclick="toggleF(this,'genre')">R&B</button>
+        <button class="fpill" onclick="toggleF(this,'genre')">Punk</button>
+        <button class="fpill" onclick="toggleF(this,'genre')">Pop</button>
+        <button class="fpill" onclick="toggleF(this,'genre')">Classical</button>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-label">Price</div>
+      <div class="free-toggle-row">
+        <span class="free-toggle-label">Free shows only</span>
+        <button class="free-toggle" id="freeToggle" onclick="toggleFree(this)" aria-pressed="false">
+          <div class="free-toggle-thumb"></div>
+        </button>
+      </div>
+      <div class="budget-wrap" id="budgetWrap">
+        <div class="budget-header">
+          <span class="budget-label">Max budget</span>
+          <span class="budget-val" id="budgetVal">$1,000</span>
+        </div>
+        <div class="slider-track-wrap">
+          <input type="range" class="budget-slider" id="budgetSlider" min="0" max="1000" value="1000" oninput="onBudget(this)">
+          <div class="slider-fill" id="sliderFill" style="width:100%"></div>
+        </div>
+        <div class="budget-ticks">
+          <span>$0</span><span>$250</span><span>$500</span><span>$750</span><span>$1k</span>
+        </div>
+        <button class="splurge-btn" id="splurgeBtn" onclick="toggleSplurge()">
+          <span class="splurge-icon">🤑</span>
+          <span id="splurgeLabel">Splurge Mode</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-label">My Artists</div>
+      <div class="autocomplete-wrap">
+        <svg class="ti-icon" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="taste-input" id="artistInput" placeholder="Search artists…" autocomplete="off"
+          oninput="onType()" onkeydown="onKey(event)">
+        <div class="ac-dropdown" id="acDrop"></div>
+      </div>
+      <div class="artist-tags" id="artistTags"></div>
+    </div>
+
+    <div class="s-section">
+      <button class="surprise-btn" onclick="surpriseMe()">🎲 Surprise Me</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- SHOWS -->
+    <div id="showsPanel">
+      <div class="toolbar">
+        <div class="result-count"><strong id="rc">20</strong> shows near you</div>
+        <div class="toolbar-right">
+          <select class="sort-select"><option>Sort: Date</option><option>Price ↑</option><option>Price ↓</option></select>
+          <div class="view-btns">
+            <button class="vbtn active" id="gBtn" onclick="setView('grid')" title="Grid">
+              <svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+            </button>
+            <button class="vbtn" id="lBtn" onclick="setView('list')" title="List">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="content" id="showsContent"></div>
+    </div>
+
+    <!-- FOR YOU -->
+    <div id="recsPanel" class="recs-panel">
+      <div class="panel-title">For You</div>
+      <div class="panel-sub" id="recsSub">Add artists you love to get personalized recommendations</div>
+      <div class="recs-grid" id="recsGrid"></div>
+    </div>
+
+    <!-- MAP -->
+    <div id="mapPanel" class="map-panel">
+      <canvas id="mapCanvas"></canvas>
+
+      <!-- Top filter bar -->
+      <div class="map-topbar">
+        <span class="map-topbar-city" id="mapCityLabel">New York City</span>
+        <div class="map-topbar-sep"></div>
+        <span class="map-topbar-count" id="mapCount">15 venues</span>
+        <div class="map-topbar-filter">
+          <button class="map-filter-pill on" onclick="toggleMapFilter(this,'all')">All</button>
+          <button class="map-filter-pill" onclick="toggleMapFilter(this,'free')">Free</button>
+          <button class="map-filter-pill" onclick="toggleMapFilter(this,'tonight')">Tonight</button>
+        </div>
+      </div>
+
+      <!-- Zoom controls -->
+      <div class="map-zoom">
+        <button class="zoom-btn" onclick="mapZoom(1)" title="Zoom in">+</button>
+        <button class="zoom-btn" onclick="mapZoom(-1)" title="Zoom out">−</button>
+      </div>
+
+      <!-- Legend -->
+      <div class="map-legend-float">
+        <div class="mleg-title">Neighborhood</div>
+        <div class="mleg-row"><div class="mleg-dot" style="background:#1a73e8"></div>Manhattan</div>
+        <div class="mleg-row"><div class="mleg-dot" style="background:#1e8e3e"></div>Hoboken / JC</div>
+        <div class="mleg-row"><div class="mleg-dot" style="background:#d93025"></div>Brooklyn</div>
+        <div class="mleg-row"><div class="mleg-dot" style="background:#f29900"></div>Queens</div>
+      </div>
+
+      <!-- Venue drawer (slides up on pin click) -->
+      <div class="venue-drawer" id="venueDrawer">
+        <div class="drawer-handle"></div>
+        <button class="drawer-close" onclick="closeDrawer()">✕</button>
+        <div class="drawer-venue-name" id="dVenue"></div>
+        <div class="drawer-artist" id="dArtist"></div>
+        <div class="drawer-meta" id="dMeta"></div>
+        <div class="drawer-tags" id="dTags"></div>
+        <div class="drawer-btns">
+          <button class="drawer-btn drawer-btn-secondary" onclick="closeDrawer()">Details</button>
+          <button class="drawer-btn drawer-btn-primary" id="dTickets">Get Tickets →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEEKEND -->
+    <div id="weekendPanel" class="generic-panel">
+      <div class="panel-title">Fill My Weekend</div>
+      <div class="panel-sub">A curated no-conflict plan based on your taste profile</div>
+      <div class="weekend-grid" id="wGrid"></div>
+    </div>
+
+    <!-- WISHLIST -->
+    <div id="wishlistPanel" class="generic-panel">
+      <div class="panel-title">Wishlist</div>
+      <div class="panel-sub">Shows you've saved — we'll remind you 48 hrs before doors</div>
+      <div id="wishlistContent"></div>
+    </div>
+  </main>
+</div>
+
+<div class="overlay" id="overlay" onclick="handleOvClick(event)">
+  <div class="modal" id="mInner"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+
+const CITIES = [
+  { id:'nyc',      name:'New York City',  state:'NY', short:'NYC',  color:'#1a73e8',
+    lat:40.7128, lng:-74.0060, radiusMiles:20,
+    hoods:['All','Manhattan','Brooklyn','Queens','Bronx','Hoboken','Jersey City','Williamsburg','LES','Bushwick'] },
+  { id:'la',       name:'Los Angeles',    state:'CA', short:'LA',   color:'#d93025',
+    lat:34.0522, lng:-118.2437, radiusMiles:25,
+    hoods:['All','Silver Lake','Echo Park','Hollywood','DTLA','Koreatown','Santa Monica','Venice','Los Feliz'] },
+  { id:'chicago',  name:'Chicago',        state:'IL', short:'CHI',  color:'#1e8e3e',
+    lat:41.8781, lng:-87.6298, radiusMiles:20,
+    hoods:['All','Wicker Park','Logan Square','Pilsen','River North','Lincoln Park','Hyde Park','Andersonville'] },
+  { id:'austin',   name:'Austin',         state:'TX', short:'ATX',  color:'#f29900',
+    lat:30.2672, lng:-97.7431, radiusMiles:15,
+    hoods:['All','East Austin','6th Street','South Congress','Red River District','North Loop','Rainey Street'] },
+  { id:'nashville',name:'Nashville',      state:'TN', short:'NSH',  color:'#7c4dff',
+    lat:36.1627, lng:-86.7816, radiusMiles:15,
+    hoods:['All','The Gulch','12 South','East Nashville','Germantown','Music Row','Midtown'] },
+  { id:'seattle',  name:'Seattle',        state:'WA', short:'SEA',  color:'#00838f',
+    lat:47.6062, lng:-122.3321, radiusMiles:15,
+    hoods:['All','Capitol Hill','Ballard','Fremont','South Lake Union','Pioneer Square','Belltown'] },
+  { id:'sf',       name:'San Francisco',  state:'CA', short:'SF',   color:'#e52592',
+    lat:37.7749, lng:-122.4194, radiusMiles:20,
+    hoods:['All','Mission','Castro','Haight','SoMa','North Beach','Tenderloin','Outer Sunset','Oakland'] },
+  { id:'boston',   name:'Boston',         state:'MA', short:'BOS',  color:'#d93025',
+    lat:42.3601, lng:-71.0589, radiusMiles:15,
+    hoods:['All','Allston','Cambridge','Jamaica Plain','South End','Fenway','Somerville'] },
+  { id:'philly',   name:'Philadelphia',   state:'PA', short:'PHL',  color:'#1a73e8',
+    lat:39.9526, lng:-75.1652, radiusMiles:15,
+    hoods:['All','Fishtown','Northern Liberties','Old City','South Philly','West Philly'] },
+  { id:'denver',   name:'Denver',         state:'CO', short:'DEN',  color:'#1e8e3e',
+    lat:39.7392, lng:-104.9903, radiusMiles:15,
+    hoods:['All','RiNo','Capitol Hill','Baker','LoDo','Highlands','Five Points','Colfax'] },
+  { id:'miami',    name:'Miami',          state:'FL', short:'MIA',  color:'#f29900',
+    lat:25.7617, lng:-80.1918, radiusMiles:15,
+    hoods:['All','Wynwood','Little Havana','Overtown','South Beach','Brickell','Little Haiti'] },
+  { id:'portland', name:'Portland',       state:'OR', short:'PDX',  color:'#7c4dff',
+    lat:45.5051, lng:-122.6750, radiusMiles:15,
+    hoods:['All','SE Division','Mississippi Ave','Alberta','Pearl District','Hawthorne'] },
+  { id:'nola',     name:'New Orleans',    state:'LA', short:'NOLA', color:'#e52592',
+    lat:29.9511, lng:-90.0715, radiusMiles:15,
+    hoods:['All','French Quarter','Frenchmen St','Bywater','Marigny','Mid-City','Uptown','Treme'] },
+  { id:'dc',       name:'Washington DC',  state:'DC', short:'DC',   color:'#00838f',
+    lat:38.9072, lng:-77.0369, radiusMiles:15,
+    hoods:['All','U Street','H Street','Shaw','Adams Morgan','Dupont Circle','Georgetown'] },
+  { id:'atlanta',  name:'Atlanta',        state:'GA', short:'ATL',  color:'#d93025',
+    lat:33.7490, lng:-84.3880, radiusMiles:15,
+    hoods:['All','East Atlanta','Little Five Points','Old Fourth Ward','West End','Decatur'] },
+];
+
+let currentCity = CITIES[0];
+let cityDropdownOpen = false;
+
+function initLanding() {
+  const grid = document.getElementById('lpGrid');
+  if (!grid) return;
+  grid.innerHTML = CITIES.map(function(c) {
+    return '<div class="lp-city" onclick="selectCity(\'' + c.id + '\')">' +
+      '<div class="lp-city-dot" style="background:' + c.color + '"></div>' +
+      '<div class="lp-city-name">' + c.name + '</div>' +
+      '<div class="lp-city-state">' + c.state + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+
+// ── API CONFIG ────────────────────────────────────────────────────────────────
+// Replace these with your real keys. In production, proxy through a backend.
+const API_KEYS = {
+  ticketmaster: 'ZM3Hf9nh0qzmME4ANAia0MC7eZL9ZjGX',   // developer.ticketmaster.com (free)
+  bandsintown:  'YOUR_BANDSINTOWN_KEY',     // artists.bandsintown.com/signup (free)
+  songkick:     'YOUR_SONGKICK_KEY',        // www.songkick.com/developer (free)
+  eventbrite:   'YOUR_EVENTBRITE_TOKEN',    // www.eventbrite.com/platform (free)
+};
+
+// ── DATA STATE ────────────────────────────────────────────────────────────────
+let liveShows = [];       // holds merged real data from all APIs
+let isLoadingShows = false;
+
+// ── NORMALIZER: every API → unified show schema ───────────────────────────────
+function normalizeTicketmaster(event) {
+  const venue = event._embedded && event._embedded.venues && event._embedded.venues[0];
+  const attraction = event._embedded && event._embedded.attractions && event._embedded.attractions[0];
+  const priceRange = event.priceRanges && event.priceRanges[0];
+  return {
+    id: 'tm_' + event.id,
+    artist: attraction ? attraction.name : event.name,
+    support: '',
+    venue: venue ? venue.name : 'Unknown Venue',
+    area: venue && venue.city ? venue.city.name : '',
+    address: venue ? (venue.address && venue.address.line1) : '',
+    lat: venue && venue.location ? parseFloat(venue.location.latitude) : null,
+    lng: venue && venue.location ? parseFloat(venue.location.longitude) : null,
+    date: event.dates && event.dates.start ? formatDate(event.dates.start.localDate) : '',
+    time: event.dates && event.dates.start && event.dates.start.localTime
+      ? formatTime(event.dates.start.localTime) : 'TBA',
+    price: priceRange ? priceRange.min : null,
+    priceMax: priceRange ? priceRange.max : null,
+    priceDisplay: priceRange
+      ? (priceRange.min === 0 ? 'Free' : '$' + Math.round(priceRange.min))
+      : 'See site',
+    genre: event.classifications && event.classifications[0] && event.classifications[0].segment
+      ? event.classifications[0].segment.name : 'Music',
+    tags: event.classifications && event.classifications[0] && event.classifications[0].genre
+      ? [event.classifications[0].genre.name] : [],
+    url: event.url,
+    color: '#1a73e8',
+    source: 'ticketmaster',
+    dow: '', day: '',
+  };
+}
+
+function normalizeBandsintown(event) {
+  return {
+    id: 'bit_' + event.id,
+    artist: event.artist && event.artist.name ? event.artist.name : '',
+    support: '',
+    venue: event.venue ? event.venue.name : 'Unknown Venue',
+    area: event.venue ? event.venue.city : '',
+    address: event.venue ? event.venue.location : '',
+    lat: event.venue ? parseFloat(event.venue.latitude) : null,
+    lng: event.venue ? parseFloat(event.venue.longitude) : null,
+    date: event.datetime ? formatDate(event.datetime.split('T')[0]) : '',
+    time: event.datetime ? formatTime(event.datetime.split('T')[1]) : 'TBA',
+    price: event.offers && event.offers[0] ? parseFloat(event.offers[0].price) || 0 : null,
+    priceMax: null,
+    priceDisplay: event.offers && event.offers[0]
+      ? (event.offers[0].type === 'Free' ? 'Free' : '$' + event.offers[0].price)
+      : 'See site',
+    genre: 'Music',
+    tags: [],
+    url: event.url,
+    color: '#7c4dff',
+    source: 'bandsintown',
+    dow: '', day: '',
+  };
+}
+
+function normalizeSongkick(event) {
+  const venue = event.venue;
+  const perf = event.performance && event.performance[0];
+  const price = event.ageRestriction === null && event.type === 'Concert';
+  return {
+    id: 'sk_' + event.id,
+    artist: perf ? perf.displayName : event.displayName,
+    support: event.performance && event.performance.length > 1
+      ? event.performance.slice(1).map(function(p){ return p.displayName; }).join(', ')
+      : '',
+    venue: venue ? venue.displayName : 'Unknown Venue',
+    area: venue && venue.metroArea ? venue.metroArea.displayName : '',
+    address: '',
+    lat: venue ? venue.lat : null,
+    lng: venue ? venue.lng : null,
+    date: event.start ? formatDate(event.start.date) : '',
+    time: event.start && event.start.time ? formatTime(event.start.time) : 'TBA',
+    price: null,
+    priceMax: null,
+    priceDisplay: 'See site',
+    genre: 'Music',
+    tags: [],
+    url: event.uri,
+    color: '#1e8e3e',
+    source: 'songkick',
+    dow: '', day: '',
+  };
+}
+
+function normalizeEventbrite(event) {
+  const ticket = event.ticket_availability;
+  const venue = event.venue;
+  const price = ticket && !ticket.is_free
+    ? (ticket.minimum_ticket_price ? '$' + parseFloat(ticket.minimum_ticket_price.major_value).toFixed(0) : 'See site')
+    : 'Free';
+  return {
+    id: 'eb_' + event.id,
+    artist: event.name ? event.name.text : '',
+    support: '',
+    venue: venue ? venue.name : 'Unknown Venue',
+    area: venue && venue.address ? venue.address.city : '',
+    address: venue && venue.address ? venue.address.localized_address_display : '',
+    lat: venue && venue.latitude ? parseFloat(venue.latitude) : null,
+    lng: venue && venue.longitude ? parseFloat(venue.longitude) : null,
+    date: event.start ? formatDate(event.start.local.split('T')[0]) : '',
+    time: event.start ? formatTime(event.start.local.split('T')[1]) : 'TBA',
+    price: ticket && ticket.is_free ? 0 : null,
+    priceMax: null,
+    priceDisplay: price,
+    genre: 'Music',
+    tags: [],
+    url: event.url,
+    color: '#f29900',
+    source: 'eventbrite',
+    dow: '', day: '',
+  };
+}
+
+// ── DATE HELPERS ─────────────────────────────────────────────────────────────
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T12:00:00');
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return days[d.getDay()] + ' ' + months[d.getMonth()] + ' ' + d.getDate();
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return 'TBA';
+  const parts = timeStr.replace('Z','').split(':');
+  let h = parseInt(parts[0]), m = parts[1] || '00';
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return h + ':' + m + ' ' + ampm;
+}
+
+function addDateParts(show) {
+  if (!show.date) return show;
+  const parts = show.date.split(' ');
+  show.dow = parts[0] || '';
+  show.day = parts[2] || '';
+  return show;
+}
+
+function dedupeShows(shows) {
+  // Dedupe by artist+venue+date
+  const seen = new Set();
+  return shows.filter(function(s) {
+    const key = (s.artist + '|' + s.venue + '|' + s.date).toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+// ── API FETCHERS ──────────────────────────────────────────────────────────────
+
+async function fetchTicketmaster(city) {
+  try {
+    const today = new Date().toISOString().split('T')[0] + 'T00:00:00Z';
+    const pages = [0, 1, 2];
+    const requests = pages.map(function(page) {
+      const url = 'https://app.ticketmaster.com/discovery/v2/events.json?' +
+        'latlong=' + city.lat + ',' + city.lng +
+        '&radius=' + city.radiusMiles +
+        '&unit=miles' +
+        '&size=50' +
+        '&page=' + page +
+        '&sort=date,asc' +
+        '&startDateTime=' + today +
+        '&apikey=' + API_KEYS.ticketmaster;
+      return fetch(url).then(function(r) { return r.json(); });
+    });
+
+    const results = await Promise.allSettled(requests);
+    const allEvents = [];
+    results.forEach(function(r, i) {
+      if (r.status === 'fulfilled') {
+        console.log('TM page ' + i + ':', JSON.stringify(r.value).slice(0, 300));
+        if (r.value._embedded && r.value._embedded.events) {
+          allEvents.push.apply(allEvents, r.value._embedded.events);
+        }
+      } else {
+        console.warn('TM page ' + i + ' failed:', r.reason);
+      }
+    });
+
+    console.log('Ticketmaster: ' + allEvents.length + ' events for ' + city.name);
+    updateDebugBar('ticketmaster', allEvents.length, false);
+    return allEvents.map(normalizeTicketmaster).map(addDateParts);
+  } catch(e) {
+    console.warn('Ticketmaster fetch failed:', e.message);
+    updateDebugBar('ticketmaster', 0, true);
+    return [];
+  }
+}
+
+
+async function fetchBandsintown(city) {
+  // Bandsintown requires artist-level calls; use nearby events approach
+  try {
+    // Use their undocumented nearby endpoint (works with app_id)
+    const url = 'https://rest.bandsintown.com/events/search?' +
+      'location=' + city.lat + ',' + city.lng +
+      '&radius=' + city.radiusMiles +
+      '&app_id=' + API_KEYS.bandsintown +
+      '&date=upcoming';
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data.map(normalizeBandsintown).map(addDateParts);
+  } catch(e) {
+    console.warn('Bandsintown fetch failed:', e.message); updateDebugBar('bandsintown', 0, true);
+    return [];
+  }
+}
+
+async function fetchSongkick(city) {
+  try {
+    // Get metro area ID first, then events
+    const metroUrl = 'https://api.songkick.com/api/3.0/search/locations.json?' +
+      'location=geo:' + city.lat + ',' + city.lng +
+      '&apikey=' + API_KEYS.songkick;
+    const metroRes = await fetch(metroUrl);
+    const metroData = await metroRes.json();
+    const metros = metroData.resultsPage && metroData.resultsPage.results &&
+      metroData.resultsPage.results.location;
+    if (!metros || !metros.length) return [];
+    const metroId = metros[0].metroArea.id;
+
+    const eventsUrl = 'https://api.songkick.com/api/3.0/metro_areas/' + metroId +
+      '/calendar.json?apikey=' + API_KEYS.songkick + '&per_page=50';
+    const eventsRes = await fetch(eventsUrl);
+    const eventsData = await eventsRes.json();
+    const events = eventsData.resultsPage && eventsData.resultsPage.results &&
+      eventsData.resultsPage.results.event;
+    if (!events) return [];
+    return events.map(normalizeSongkick).map(addDateParts);
+  } catch(e) {
+    console.warn('Songkick fetch failed:', e.message); updateDebugBar('songkick', 0, true);
+    return [];
+  }
+}
+
+async function fetchEventbrite(city) {
+  try {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate());
+    const startStr = tomorrow.toISOString().split('.')[0] + 'Z';
+    const url = 'https://www.eventbriteapi.com/v3/events/search/?' +
+      'categories=103' +        // Music category
+      '&location.latitude=' + city.lat +
+      '&location.longitude=' + city.lng +
+      '&location.within=' + city.radiusMiles + 'mi' +
+      '&start_date.range_start=' + startStr +
+      '&sort_by=date' +
+      '&expand=venue,ticket_availability' +
+      '&token=' + API_KEYS.eventbrite;
+    const res = await fetch(url, {
+      headers: { 'Authorization': 'Bearer ' + API_KEYS.eventbrite }
+    });
+    const data = await res.json();
+    if (!data.events) return [];
+    return data.events.map(normalizeEventbrite).map(addDateParts);
+  } catch(e) {
+    console.warn('Eventbrite fetch failed:', e.message); updateDebugBar('eventbrite', 0, true);
+    return [];
+  }
+}
+
+// ── SUPABASE (scraped venue shows) ───────────────────────────────────────────
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';       // e.g. https://xyz.supabase.co
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';  // safe to expose (anon key)
+
+async function fetchScrapedShows(city) {
+  try {
+    // Query your scraped_shows table filtered by city
+    const url = SUPABASE_URL + '/rest/v1/scraped_shows?' +
+      'city_id=eq.' + city.id +
+      '&show_date=gte.' + new Date().toISOString().split('T')[0] +
+      '&order=show_date.asc' +
+      '&limit=100';
+    const res = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+      }
+    });
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data.map(function(row) {
+      return {
+        id: 'scraped_' + row.id,
+        artist: row.artist_name,
+        support: row.support_act || '',
+        venue: row.venue_name,
+        area: row.neighborhood || row.city_name,
+        address: row.venue_address || '',
+        lat: row.venue_lat, lng: row.venue_lng,
+        date: formatDate(row.show_date),
+        time: formatTime(row.show_time),
+        price: row.price_min,
+        priceMax: row.price_max,
+        priceDisplay: row.price_min === 0 ? 'Free' : (row.price_min ? '$' + row.price_min : 'See site'),
+        genre: row.genre || 'Music',
+        tags: row.tags ? row.tags.split(',') : [],
+        url: row.ticket_url || row.source_url,
+        color: '#00838f',
+        source: 'scraped',
+        dow: '', day: '',
+      };
+    }).map(addDateParts);
+  } catch(e) {
+    console.warn('Supabase fetch failed:', e.message);
+    return [];
+  }
+}
+
+// ── MAIN FETCH ORCHESTRATOR ───────────────────────────────────────────────────
+async function fetchShowsForCity(city) {
+  console.log('fetchShowsForCity called for:', city.name);
+  if (isLoadingShows) return;
+  isLoadingShows = true;
+  showLoadingState();
+
+  try {
+    // Fire all 5 sources in parallel
+    const [tmShows, bitShows, skShows, ebShows, scrapedShows] = await Promise.allSettled([
+      fetchTicketmaster(city),
+      fetchBandsintown(city),
+      fetchSongkick(city),
+      fetchEventbrite(city),
+      fetchScrapedShows(city),
+    ]);
+
+    const allShows = [
+      ...(tmShows.status === 'fulfilled' ? tmShows.value : []),
+      ...(bitShows.status === 'fulfilled' ? bitShows.value : []),
+      ...(skShows.status === 'fulfilled' ? skShows.value : []),
+      ...(ebShows.status === 'fulfilled' ? ebShows.value : []),
+      ...(scrapedShows.status === 'fulfilled' ? scrapedShows.value : []),
+    ];
+
+    // Sort by date, dedupe
+    allShows.sort(function(a, b) { return a.date > b.date ? 1 : -1; });
+    liveShows = dedupeShows(allShows);
+
+    console.log('Total merged shows:', liveShows.length);
+    if (liveShows.length > 0) {
+      renderShows(liveShows);
+      showToast(liveShows.length + ' live shows loaded for ' + city.name);
+    } else {
+      renderShows(SHOWS);
+      showToast('No live data yet — showing demo shows');
+    }
+  } catch(e) {
+    console.error('fetchShowsForCity error:', e);
+    renderShows(SHOWS);
+  } finally {
+    isLoadingShows = false;
+    hideLoadingState();
+  }
+}
+
+function showLoadingState() {
+  const rc = document.getElementById('rc');
+  if (rc) rc.innerHTML = '<span style="color:var(--text-muted)">Fetching live shows...</span>';
+  // Show debug bar
+  let bar = document.getElementById('apiDebugBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'apiDebugBar';
+    bar.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);' +
+      'background:#1a1a2e;color:white;font-size:12px;font-family:monospace;' +
+      'padding:10px 18px;border-radius:8px;z-index:9998;display:flex;gap:16px;' +
+      'box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML = '<span id="dbTM">🔄 Ticketmaster</span>';
+  bar.style.display = 'flex';
+}
+
+function hideLoadingState() {
+  const bar = document.getElementById('apiDebugBar');
+  if (bar) setTimeout(function(){ bar.style.display = 'none'; }, 2000);
+}
+
+function updateDebugBar(source, count, error) {
+  if (source !== 'ticketmaster') return;
+  const el = document.getElementById('dbTM');
+  if (!el) return;
+  el.textContent = (error ? '❌' : '✅') + ' Ticketmaster' + (error ? ' (failed)' : ' (' + count + ' shows)');
+}
+
+function goHome() {
+  const lp = document.getElementById('landingPage');
+  lp.style.transition = 'none';
+  lp.style.opacity = '1';
+  lp.style.transform = 'scale(1)';
+  lp.style.display = 'flex';
+}
+
+function selectCity(id) {
+  currentCity = CITIES.find(c => c.id === id) || CITIES[0];
+  const lp = document.getElementById('landingPage');
+  lp.style.transition = 'opacity 0.28s ease, transform 0.28s ease';
+  lp.style.opacity = '0'; lp.style.transform = 'scale(0.98)';
+  setTimeout(function(){ lp.style.display = 'none'; }, 290);
+  document.getElementById('cityChipLabel').textContent = currentCity.name;
+  renderAreaFilters();
+  fetchShowsForCity(currentCity);
+}
+
+function initCityDropdown() { renderCityDdList(CITIES); }
+
+function renderCityDdList(cities) {
+  const el = document.getElementById('cityDdList');
+  if(!el) return;
+  el.innerHTML = cities.map(c =>
+    '<div class="city-dd-item ' + (c.id===currentCity.id?'active':'') + '" onclick="switchCity(\'' + c.id + '\')">' +
+    '<div class="city-dd-dot" style="background:'+c.color+'"></div>' +
+    '<div class="city-dd-name">'+c.name+'</div>' +
+    '<div class="city-dd-sub">'+(c.hoods.length-1)+' hoods</div></div>'
+  ).join('');
+}
+
+function toggleCityDropdown() {
+  cityDropdownOpen = !cityDropdownOpen;
+  document.getElementById('cityDropdown').classList.toggle('open', cityDropdownOpen);
+  document.getElementById('cityChip').classList.toggle('open', cityDropdownOpen);
+  if(cityDropdownOpen){
+    document.getElementById('cityDdSearch').value = '';
+    renderCityDdList(CITIES);
+    setTimeout(function(){ document.getElementById('cityDdSearch').focus(); }, 50);
+  }
+}
+
+function filterCities(val) {
+  renderCityDdList(CITIES.filter(function(c){ return c.name.toLowerCase().indexOf(val.toLowerCase()) >= 0; }));
+}
+
+function switchCity(id) {
+  currentCity = CITIES.find(function(c){ return c.id === id; }) || CITIES[0];
+  document.getElementById('cityChipLabel').textContent = currentCity.name;
+  renderAreaFilters();
+  if(cityDropdownOpen) toggleCityDropdown();
+  fetchShowsForCity(currentCity);
+}
+
+function renderAreaFilters() {
+  var el = document.getElementById('areaFilterGroup');
+  if(!el) return;
+  el.innerHTML = currentCity.hoods.map(function(n, i){
+    return '<button class="fpill ' + (i===0?'active':'') + '" onclick="toggleF(this,\'area\')">' + n + '</button>';
+  }).join('');
+}
+
+
+const SHOWS = [
+  {id:1, artist:'Khruangbin',          support:'Jonathan Hoard',  venue:'Brooklyn Steel',             area:'Brooklyn',    date:'Thu Mar 6',  dow:'Thu',day:'6',  time:'8:00 PM',  price:45, genre:'Indie',      tags:['psychedelic','world'],      color:'#1a73e8'},
+  {id:2, artist:'LCD Soundsystem',     support:'',                venue:'Bowery Ballroom',            area:'Manhattan',   date:'Thu Mar 6',  dow:'Thu',day:'6',  time:'9:00 PM',  price:35, genre:'Electronic', tags:['dance','indie rock'],        color:'#7c4dff'},
+  {id:3, artist:'Open Mic Night',      support:'Various',         venue:"Maxwell's Tavern",           area:'Hoboken',     date:'Thu Mar 6',  dow:'Thu',day:'6',  time:'7:00 PM',  price:0,  genre:'Folk',       tags:['acoustic','local'],          color:'#1e8e3e'},
+  {id:4, artist:'BADBADNOTGOOD',       support:'Nate Mercereau',  venue:'Le Poisson Rouge',           area:'Manhattan',   date:'Fri Mar 7',  dow:'Fri',day:'7',  time:'9:30 PM',  price:28, genre:'Jazz',       tags:['jazz','fusion'],             color:'#f29900'},
+  {id:5, artist:'Turnstile',           support:'Militarie Gun',   venue:'Warsaw',                     area:'Brooklyn',    date:'Fri Mar 7',  dow:'Fri',day:'7',  time:'8:00 PM',  price:30, genre:'Punk',       tags:['hardcore','punk'],           color:'#d93025'},
+  {id:6, artist:'Free Jazz Sundays',   support:'',                venue:'Groove on Grove',            area:'Jersey City', date:'Fri Mar 7',  dow:'Fri',day:'7',  time:'6:00 PM',  price:0,  genre:'Jazz',       tags:['jazz','free'],               color:'#00838f'},
+  {id:7, artist:'Caroline Polachek',   support:'',                venue:'Brooklyn Paramount',         area:'Brooklyn',    date:'Fri Mar 7',  dow:'Fri',day:'7',  time:'8:30 PM',  price:55, genre:'Pop',        tags:['art pop','indie'],           color:'#e52592'},
+  {id:8, artist:'DJ Seinfeld',         support:'Mood Killer',     venue:"Baby's All Right",           area:'Brooklyn',    date:'Sat Mar 8',  dow:'Sat',day:'8',  time:'11:00 PM', price:20, genre:'Electronic', tags:['lo-fi house','dance'],       color:'#7c4dff'},
+  {id:9, artist:'Japanese Breakfast',  support:'Squirrel Flower', venue:'Terminal 5',                 area:'Manhattan',   date:'Sat Mar 8',  dow:'Sat',day:'8',  time:'8:00 PM',  price:40, genre:'Indie',      tags:['indie rock','shoegaze'],     color:'#1a73e8'},
+  {id:10,artist:'Bartees Strange',     support:'',                venue:'Music Hall Williamsburg',    area:'Brooklyn',    date:'Sat Mar 8',  dow:'Sat',day:'8',  time:'9:00 PM',  price:25, genre:'Rock',       tags:['indie rock','post-punk'],    color:'#1e8e3e'},
+  {id:11,artist:'Fela Kuti Tribute',   support:'Antibalas',       venue:"SOB's",                      area:'Manhattan',   date:'Sat Mar 8',  dow:'Sat',day:'8',  time:'10:00 PM', price:22, genre:'R&B',        tags:['afrobeat','world'],          color:'#f29900'},
+  {id:12,artist:'Open Format DJ',      support:'',                venue:'White Eagle Hall',           area:'Jersey City', date:'Sat Mar 8',  dow:'Sat',day:'8',  time:'10:00 PM', price:15, genre:'Electronic', tags:['open format','dance'],       color:'#00838f'},
+  {id:13,artist:'Free Jazz Afternoon', support:'',                venue:'Clam Broth House',           area:'Hoboken',     date:'Sun Mar 9',  dow:'Sun',day:'9',  time:'3:00 PM',  price:0,  genre:'Jazz',       tags:['jazz','afternoon'],          color:'#1e8e3e'},
+  {id:14,artist:'Alvvays',             support:'Tomberlin',       venue:'Pier 17',                    area:'Manhattan',   date:'Mon Mar 10', dow:'Mon',day:'10', time:'8:00 PM',  price:38, genre:'Indie',      tags:['dream pop','shoegaze'],      color:'#1a73e8'},
+  {id:15,artist:'Amyl and the Sniffers',support:'METZ',           venue:'Elsewhere',                  area:'Brooklyn',    date:'Tue Mar 11', dow:'Tue',day:'11', time:'8:30 PM',  price:22, genre:'Punk',       tags:['pub rock','punk'],           color:'#d93025'},
+  {id:16,artist:'Mk.gee',              support:'',                venue:'Music Hall Williamsburg',    area:'Brooklyn',    date:'Tue Mar 11', dow:'Tue',day:'11', time:'9:00 PM',  price:20, genre:'Rock',       tags:['art rock','indie'],          color:'#7c4dff'},
+  {id:17,artist:'Wednesday',           support:'MJ Lenderman',    venue:"Baby's All Right",           area:'Brooklyn',    date:'Wed Mar 12', dow:'Wed',day:'12', time:'8:00 PM',  price:18, genre:'Rock',       tags:['country rock','indie'],      color:'#f29900'},
+  {id:18,artist:'House of Yes Night',  support:'',                venue:'House of Yes',               area:'Brooklyn',    date:'Wed Mar 12', dow:'Wed',day:'12', time:'10:00 PM', price:15, genre:'Electronic', tags:['dance','performance'],       color:'#e52592'},
+  {id:19,artist:'Nilüfer Yanya',       support:'',                venue:'Rough Trade NYC',            area:'Brooklyn',    date:'Thu Mar 13', dow:'Thu',day:'13', time:'8:30 PM',  price:20, genre:'Indie',      tags:['indie rock','alt'],          color:'#1a73e8'},
+  {id:20,artist:'Free Bluegrass Jam',  support:'',                venue:'10th and Willow',            area:'Hoboken',     date:'Thu Mar 13', dow:'Thu',day:'13', time:'7:00 PM',  price:0,  genre:'Folk',       tags:['bluegrass','jam'],           color:'#1e8e3e'},
+];
+
+const RECS=[
+  {artist:'Yaeji',              because:'Fans of LCD Soundsystem love her',           match:92,shows:1,genre:'Electronic'},
+  {artist:'Arooj Aftab',        because:'Meditative, hypnotic, beautifully strange',  match:88,shows:1,genre:'Jazz/Folk'},
+  {artist:'Mdou Moctar',        because:'Shredding guitar rooted in Tuareg tradition',match:91,shows:3,genre:'Rock/World'},
+  {artist:'Floating Points',    because:'Electronic jazz that rewards patience',       match:87,shows:2,genre:'Electronic'},
+  {artist:'Hermanos Gutiérrez', because:'Cinematic slide guitar instrumentals',        match:83,shows:1,genre:'Folk'},
+  {artist:'billy woods',        because:'Dense, literary hip-hop. No hooks.',          match:84,shows:2,genre:'Hip-Hop'},
+  {artist:'serpentwithfeet',    because:'R&B with avant-garde church energy',          match:79,shows:1,genre:'R&B'},
+  {artist:'Big Thief',          because:'Raw, earthy indie folk with heart',           match:85,shows:2,genre:'Indie Folk'},
+];
+
+const SETLISTS={
+  'Khruangbin':['Time (You and I)','Connaissais de Face','Pelota','Friday Morning','María También','Dearest Alfred','If You Knew'],
+  'LCD Soundsystem':['I Can Change','Dance Yrself Clean','Someone Great','Tribulations','All My Friends','Losing My Edge'],
+  'Japanese Breakfast':['Paprika','Kokomo, IN','Be Sweet','Tactics','Savage Good Boy','Posing in Bondage','Glider'],
+};
+const DEF_SETLIST=['Opening Track','Fan Favorite','Deep Cut','New Single','Album Highlight','Classic Closer','Encore'];
+
+const ARTIST_DB=[
+  {name:'Khruangbin',genre:'Indie/World'},{name:'LCD Soundsystem',genre:'Electronic'},
+  {name:'Japanese Breakfast',genre:'Indie'},{name:'Caroline Polachek',genre:'Art Pop'},
+  {name:'Bartees Strange',genre:'Indie Rock'},{name:'Alvvays',genre:'Dream Pop'},
+  {name:'Wednesday',genre:'Country Rock'},{name:'Mk.gee',genre:'Art Rock'},
+  {name:'Nilüfer Yanya',genre:'Indie Rock'},{name:'Turnstile',genre:'Punk'},
+  {name:'Amyl and the Sniffers',genre:'Punk'},{name:'BADBADNOTGOOD',genre:'Jazz'},
+  {name:'DJ Seinfeld',genre:'Electronic'},{name:'Floating Points',genre:'Electronic'},
+  {name:'Mdou Moctar',genre:'Rock/World'},{name:'Arooj Aftab',genre:'Jazz/Folk'},
+  {name:'Yaeji',genre:'Electronic'},{name:'billy woods',genre:'Hip-Hop'},
+  {name:'Hermanos Gutiérrez',genre:'Folk'},{name:'serpentwithfeet',genre:'R&B'},
+  {name:'Radiohead',genre:'Alternative'},{name:'Bon Iver',genre:'Indie Folk'},
+  {name:'Frank Ocean',genre:'R&B'},{name:'Kendrick Lamar',genre:'Hip-Hop'},
+  {name:'Mitski',genre:'Indie Rock'},{name:'Fred Again..',genre:'Electronic'},
+  {name:'Four Tet',genre:'Electronic'},{name:'Jamie xx',genre:'Electronic'},
+  {name:'Slowdive',genre:'Shoegaze'},{name:'Beach House',genre:'Dream Pop'},
+  {name:'Vampire Weekend',genre:'Indie'},{name:'Phoebe Bridgers',genre:'Folk'},
+  {name:'Big Thief',genre:'Indie Folk'},{name:'Courtney Barnett',genre:'Indie Rock'},
+  {name:'Snail Mail',genre:'Indie Rock'},{name:'Soccer Mommy',genre:'Indie Rock'},
+  {name:'boygenius',genre:'Indie Folk'},{name:'The National',genre:'Indie Rock'},
+  {name:'Sufjan Stevens',genre:'Folk'},{name:'Thundercat',genre:'Jazz/R&B'},
+  {name:'Flying Lotus',genre:'Electronic'},{name:'SZA',genre:'R&B'},
+  {name:'Pinegrove',genre:'Indie Folk'},{name:'Jeff Rosenstock',genre:'Punk'},
+];
+
+let myArtists=['Khruangbin','LCD Soundsystem'];
+let saved=new Set(), going=new Set();
+let view='grid', acHL=-1;
+
+window.onload=function(){ initLanding(); initCityDropdown(); renderTags(); renderShows(); renderRecs(); renderMap(); renderWeekend(); };
+
+function switchTab(tab,btn){
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  document.getElementById('showsPanel').style.display=tab==='shows'?'block':'none';
+  if(tab==='map'){ setTimeout(function(){ renderMap(); }, 50); }
+  ['recs','map','weekend','wishlist'].forEach(t=>{
+    const el=document.getElementById(t+'Panel');
+    if(t==='recs') el.classList.toggle('active',tab==='recs');
+    else el.classList.toggle('active',tab===t);
+  });
+  if(tab==='wishlist') renderWishlist();
+}
+
+function renderShows(list){
+  list=list||SHOWS;
+  document.getElementById('rc').textContent=list.length;
+  const byDate={};
+  list.forEach(s=>{ (byDate[s.date]=byDate[s.date]||[]).push(s); });
+  let html='';
+  Object.entries(byDate).forEach(([date,shows],gi)=>{
+    html+=`<div class="date-section">
+      <div class="date-heading">
+        <div class="date-heading-label">${date}</div>
+        <div class="date-heading-line"></div>
+        <div class="date-heading-count">${shows.length} show${shows.length!==1?'s':''}</div>
+      </div>`;
+    if(view==='grid'){
+      html+='<div class="shows-grid">'+shows.map((s,i)=>cardHTML(s,gi*6+i)).join('')+'</div>';
+    } else {
+      html+='<div class="shows-list">'+shows.map((s,i)=>listHTML(s,gi*8+i)).join('')+'</div>';
+    }
+    html+='</div>';
+  });
+  document.getElementById('showsContent').innerHTML=html;
+}
+
+function cardHTML(s,i){
+  const free=s.price===0, isGoing=going.has(s.id), isSaved=saved.has(s.id);
+  const delay=(i%6)*40;
+  const badges=[free?'<span class="badge badge-free">Free</span>':'', isGoing?'<span class="badge badge-going">Going ✓</span>':''].filter(Boolean).join('');
+  return `<div class="show-card" style="animation-delay:${delay}ms" onclick="openModal(${s.id})">
+    <div class="card-stripe" style="background:${s.color}"></div>
+    <div class="card-body">
+      <div class="card-badges">${badges||'<span></span>'}</div>
+      <div class="card-artist">${s.artist}</div>
+      <div class="card-support">${s.support?'w/ '+s.support:'&nbsp;'}</div>
+      <div class="card-meta-row">
+        <div><div class="card-venue">${s.venue}</div><div class="card-time">${s.area} · ${s.time}</div></div>
+        <div class="card-price ${free?'free':''}">${free?'Free':'$'+s.price}</div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <div class="card-tags">${s.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+      <div class="card-actions">
+        <button class="icon-btn ${isSaved?'saved':''}" onclick="event.stopPropagation();toggleSave(${s.id})" title="Save">
+          <svg width="12" height="12" fill="${isSaved?'currentColor':'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+        <button class="icon-btn ${going.has(s.id)?'going-on':''}" onclick="event.stopPropagation();toggleGoing(${s.id})" title="Going">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function listHTML(s,i){
+  const free=s.price===0;
+  return `<div class="list-item" style="animation-delay:${(i%8)*30}ms" onclick="openModal(${s.id})">
+    <div class="list-date"><div class="list-day">${s.day}</div><div class="list-dow">${s.dow}</div></div>
+    <div class="list-stripe" style="background:${s.color}"></div>
+    <div class="list-main">
+      <div class="list-artist">${s.artist}</div>
+      <div class="list-sub">${s.time}${s.support?' · w/ '+s.support:''} · ${s.genre}</div>
+    </div>
+    <div class="list-right">
+      <div class="list-venue">${s.venue}</div>
+      <div class="list-price ${free?'free':''}">${free?'Free':'$'+s.price}</div>
+    </div>
+  </div>`;
+}
+
+function setView(v){
+  view=v;
+  document.getElementById('gBtn').classList.toggle('active',v==='grid');
+  document.getElementById('lBtn').classList.toggle('active',v==='list');
+  renderShows();
+}
+
+function openModal(id){
+  const s=SHOWS.find(x=>x.id===id); if(!s) return;
+  const sl=SETLISTS[s.artist]||DEF_SETLIST;
+  const free=s.price===0, isSaved=saved.has(id), isGoing=going.has(id);
+  document.getElementById('mInner').innerHTML=`
+    <div class="m-stripe" style="background:${s.color}"></div>
+    <div class="m-head">
+      <button class="m-close" onclick="closeModal()">✕</button>
+      <div class="m-venue-line">
+        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        ${s.venue} · ${s.area}
+      </div>
+      <div class="m-artist">${s.artist}</div>
+      ${s.support?`<div class="m-support">with ${s.support}</div>`:''}
+      <div class="m-tags">${s.tags.map(t=>`<span class="m-tag">${t}</span>`).join('')}<span class="m-tag">${s.genre}</span></div>
+    </div>
+    <div class="m-body">
+      <div class="info-grid">
+        <div><div class="info-label">Date</div><div class="info-val">${s.date}</div></div>
+        <div><div class="info-label">Doors</div><div class="info-val">${s.time}</div></div>
+        <div><div class="info-label">Price</div><div class="info-val ${free?'green':'blue'}">${free?'Free Admission':'$'+s.price}</div></div>
+        <div><div class="info-label">Area</div><div class="info-val">${s.area}</div></div>
+      </div>
+      <div class="sl-label">Typical Setlist</div>
+      <div class="sl-box">${sl.map((song,i)=>`<div class="sl-song"><span class="sl-num">${i+1}</span><span>${song}</span></div>`).join('')}</div>
+      <div class="m-actions">
+        <button class="mbtn mbtn-save ${isSaved?'saved':''}" id="mSave" onclick="toggleSaveM(${id})">${isSaved?'♥ Saved':'♡ Save'}</button>
+        <button class="mbtn mbtn-going ${isGoing?'going':''}" id="mGoing" onclick="toggleGoingM(${id})">${isGoing?'✓ Going!':'✓ Going'}</button>
+        <button class="mbtn mbtn-primary" onclick="showToast('Opening tickets…')">Get Tickets →</button>
+      </div>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
+function handleOvClick(e){ if(e.target===document.getElementById('overlay')) closeModal(); }
+
+function toggleSaveM(id){
+  saved.has(id)?saved.delete(id):saved.add(id);
+  const b=document.getElementById('mSave');
+  b.textContent=saved.has(id)?'♥ Saved':'♡ Save'; b.classList.toggle('saved',saved.has(id));
+  showToast(saved.has(id)?'Saved ♥':'Removed'); renderShows();
+}
+function toggleGoingM(id){
+  going.has(id)?going.delete(id):going.add(id);
+  const b=document.getElementById('mGoing');
+  b.textContent=going.has(id)?'✓ Going!':'✓ Going'; b.classList.toggle('going',going.has(id));
+  showToast(going.has(id)?"You're going! 🎶":'Removed'); renderShows();
+}
+function toggleSave(id){ saved.has(id)?saved.delete(id):saved.add(id); showToast(saved.has(id)?'Saved ♥':'Removed'); renderShows(); }
+function toggleGoing(id){ going.has(id)?going.delete(id):going.add(id); showToast(going.has(id)?"Going! 🎶":'Removed'); renderShows(); }
+
+function renderRecs(){
+  const grid=document.getElementById('recsGrid'), sub=document.getElementById('recsSub');
+  if(!myArtists.length){
+    grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🎵</div><div class="empty-title">No taste profile yet</div><div class="empty-sub">Add artists you love in the sidebar</div></div>`;
+    return;
+  }
+  sub.textContent=`Based on your love of ${myArtists.join(', ')}`;
+  grid.innerHTML=RECS.map((r,i)=>`<div class="rec-card" style="animation-delay:${i*40}ms">
+    <div class="rec-match">${r.match}% match</div>
+    <div class="rec-artist">${r.artist}</div>
+    <div class="rec-because">${r.because}</div>
+    <div class="rec-shows">${r.shows} show${r.shows!==1?'s':''} nearby · ${r.genre}</div>
+  </div>`).join('');
+}
+
+// ── MAP ENGINE ────────────────────────────────────────────────────────────────
+
+const MAP_VENUES = [
+  {name:'Brooklyn Steel',       area:'Brooklyn',   lat:40.7240, lng:-73.9578, color:'#d93025', shows:3, genre:'Indie',      free:false, tonight:true},
+  {name:'Bowery Ballroom',      area:'Manhattan',  lat:40.7203, lng:-73.9930, color:'#1a73e8', shows:2, genre:'Rock',       free:false, tonight:true},
+  {name:'Le Poisson Rouge',     area:'Manhattan',  lat:40.7331, lng:-74.0024, color:'#1a73e8', shows:1, genre:'Electronic', free:false, tonight:false},
+  {name:'Terminal 5',           area:'Manhattan',  lat:40.7684, lng:-73.9964, color:'#1a73e8', shows:2, genre:'Pop',        free:false, tonight:true},
+  {name:'Warsaw',               area:'Brooklyn',   lat:40.7048, lng:-73.9217, color:'#d93025', shows:1, genre:'Punk',       free:false, tonight:true},
+  {name:"Baby's All Right",     area:'Brooklyn',   lat:40.7126, lng:-73.9619, color:'#d93025', shows:2, genre:'Indie',      free:false, tonight:false},
+  {name:'Rough Trade NYC',      area:'Brooklyn',   lat:40.7176, lng:-73.9572, color:'#d93025', shows:1, genre:'Indie',      free:false, tonight:false},
+  {name:'House of Yes',         area:'Brooklyn',   lat:40.7063, lng:-73.9201, color:'#d93025', shows:1, genre:'Electronic', free:false, tonight:false},
+  {name:"Maxwell's Tavern",     area:'Hoboken',    lat:40.7440, lng:-74.0285, color:'#1e8e3e', shows:2, genre:'Folk',       free:true,  tonight:true},
+  {name:'White Eagle Hall',     area:'Jersey City',lat:40.7201, lng:-74.0431, color:'#1e8e3e', shows:1, genre:'Electronic', free:false, tonight:false},
+  {name:'Groove on Grove',      area:'Jersey City',lat:40.7166, lng:-74.0388, color:'#1e8e3e', shows:1, genre:'Jazz',       free:true,  tonight:true},
+  {name:"SOB's",                area:'Manhattan',  lat:40.7265, lng:-74.0047, color:'#1a73e8', shows:2, genre:'R&B',        free:false, tonight:false},
+  {name:'Music Hall Williamsburg',area:'Brooklyn', lat:40.7133, lng:-73.9640, color:'#d93025', shows:2, genre:'Rock',       free:false, tonight:true},
+  {name:'Pier 17',              area:'Manhattan',  lat:40.7053, lng:-74.0023, color:'#1a73e8', shows:1, genre:'Pop',        free:false, tonight:false},
+  {name:'Elsewhere',            area:'Brooklyn',   lat:40.7060, lng:-73.9280, color:'#d93025', shows:1, genre:'Punk',       free:false, tonight:false},
+  {name:'10th and Willow',      area:'Hoboken',    lat:40.7510, lng:-74.0285, color:'#1e8e3e', shows:1, genre:'Folk',       free:true,  tonight:false},
+  {name:'Clam Broth House',     area:'Hoboken',    lat:40.7420, lng:-74.0296, color:'#1e8e3e', shows:1, genre:'Jazz',       free:true,  tonight:false},
+  {name:'Astoria Performing Arts',area:'Queens',   lat:40.7725, lng:-73.9301, color:'#f29900', shows:1, genre:'Classical',  free:false, tonight:false},
+];
+
+// Map state
+let mapScale = 1;
+let mapOffsetX = 0, mapOffsetY = 0;
+let mapDragging = false, mapDragStartX = 0, mapDragStartY = 0, mapDragOX = 0, mapDragOY = 0;
+let mapActiveFilter = 'all';
+let mapAnimFrame = null;
+let mapPinAnimations = {};
+let mapHovered = null;
+
+// NYC bounding box → canvas coords
+const NYC_BOUNDS = { minLat:40.690, maxLat:40.800, minLng:-74.060, maxLng:-73.900 };
+
+function latLngToXY(lat, lng, w, h) {
+  const px = (lng - NYC_BOUNDS.minLng) / (NYC_BOUNDS.maxLng - NYC_BOUNDS.minLng);
+  const py = 1 - (lat - NYC_BOUNDS.minLat) / (NYC_BOUNDS.maxLat - NYC_BOUNDS.minLat);
+  return { x: px * w, y: py * h };
+}
+
+function renderMap() {
+  const canvas = document.getElementById('mapCanvas');
+  if (!canvas) return;
+  const panel = document.getElementById('mapPanel');
+  canvas.width = panel.offsetWidth;
+  canvas.height = panel.offsetHeight;
+  drawMap();
+  setupMapEvents();
+  document.getElementById('mapCityLabel').textContent = currentCity ? currentCity.name : 'New York City';
+  const filtered = getFilteredVenues();
+  document.getElementById('mapCount').textContent = filtered.length + ' venues';
+}
+
+function getFilteredVenues() {
+  return MAP_VENUES.filter(v => {
+    if (mapActiveFilter === 'free') return v.free;
+    if (mapActiveFilter === 'tonight') return v.tonight;
+    return true;
+  });
+}
+
+function drawMap() {
+  const canvas = document.getElementById('mapCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Apply pan/zoom transform
+  ctx.save();
+  ctx.translate(mapOffsetX, mapOffsetY);
+  ctx.scale(mapScale, mapScale);
+
+  // Beautiful map background
+  const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+  bgGrad.addColorStop(0, '#e8f0f8');
+  bgGrad.addColorStop(1, '#dce8f0');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(-mapOffsetX/mapScale - 200, -mapOffsetY/mapScale - 200, W/mapScale + 400, H/mapScale + 400);
+
+  // Draw water bodies (Hudson River area)
+  ctx.fillStyle = '#b8d4e8';
+  ctx.fillRect(-mapOffsetX/mapScale - 200, -mapOffsetY/mapScale - 200, 80/mapScale, H/mapScale + 400);
+  // East river
+  ctx.fillStyle = '#c4daea';
+  ctx.beginPath();
+  ctx.ellipse(W * 0.72, H * 0.45, 18, H * 0.6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Draw street grid - major roads
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.lineWidth = 3 / mapScale;
+
+  // Horizontal streets (avenues going roughly horizontally in our projection)
+  for (let i = 0; i < 12; i++) {
+    const y = (H * 0.05) + i * (H * 0.08);
+    ctx.beginPath();
+    ctx.moveTo(-50, y);
+    ctx.lineTo(W + 50, y);
+    ctx.stroke();
+  }
+  // Vertical streets
+  for (let i = 0; i < 16; i++) {
+    const x = (W * 0.05) + i * (W * 0.065);
+    ctx.beginPath();
+    ctx.moveTo(x, -50);
+    ctx.lineTo(x, H + 50);
+    ctx.stroke();
+  }
+
+  // Minor streets - thinner
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 1.2 / mapScale;
+  for (let i = 0; i < 24; i++) {
+    const y = (H * 0.025) + i * (H * 0.04);
+    ctx.beginPath(); ctx.moveTo(-50, y); ctx.lineTo(W + 50, y); ctx.stroke();
+  }
+  for (let i = 0; i < 32; i++) {
+    const x = (W * 0.025) + i * (W * 0.033);
+    ctx.beginPath(); ctx.moveTo(x, -50); ctx.lineTo(x, H + 50); ctx.stroke();
+  }
+
+  // Neighborhood label zones (subtle fills)
+  const zones = [
+    { label:'MANHATTAN', x:0.58, y:0.28, color:'rgba(26,115,232,0.04)' },
+    { label:'BROOKLYN', x:0.72, y:0.62, color:'rgba(217,48,37,0.04)' },
+    { label:'HOBOKEN', x:0.14, y:0.35, color:'rgba(30,142,62,0.05)' },
+    { label:'JERSEY CITY', x:0.14, y:0.58, color:'rgba(30,142,62,0.04)' },
+    { label:'QUEENS', x:0.85, y:0.28, color:'rgba(242,153,0,0.04)' },
+  ];
+
+  zones.forEach(z => {
+    ctx.fillStyle = z.color;
+    ctx.fillRect(z.x * W - 60, z.y * H - 30, 120, 60);
+    ctx.fillStyle = 'rgba(100,120,150,0.25)';
+    ctx.font = `bold ${11/mapScale}px sans-serif`;
+    ctx.letterSpacing = '2px';
+    ctx.textAlign = 'center';
+    ctx.fillText(z.label, z.x * W, z.y * H);
+  });
+
+  ctx.restore();
+
+  // Draw venue pins (not affected by zoom for label clarity, but positioned by zoom)
+  const venues = getFilteredVenues();
+  venues.forEach((v, i) => {
+    const pos = latLngToXY(v.lat, v.lng, W, H);
+    const sx = pos.x * mapScale + mapOffsetX;
+    const sy = pos.y * mapScale + mapOffsetY;
+    const isHovered = mapHovered === i;
+    const anim = mapPinAnimations[i] || 1;
+    drawPin(ctx, sx, sy, v, isHovered, anim, i);
+  });
+}
+
+function drawPin(ctx, x, y, venue, hovered, anim, idx) {
+  const r = hovered ? 11 * anim : (6 + Math.min(venue.shows, 4) * 2);
+
+  // Pulse ring for hovered
+  if (hovered) {
+    ctx.beginPath();
+    ctx.arc(x, y, r * 1.8, 0, Math.PI * 2);
+    ctx.fillStyle = venue.color.replace(')', ',0.15)').replace('rgb','rgba').replace('#', 'rgba(').replace(')', '');
+    const hex = venue.color;
+    const bigint = parseInt(hex.slice(1), 16);
+    const rr = (bigint >> 16) & 255, g = (bigint >> 8) & 255, b = bigint & 255;
+    ctx.fillStyle = 'rgba(' + rr + ',' + g + ',' + b + ',0.15)';
+    ctx.fill();
+  }
+
+  // Shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.18)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 3;
+
+  // Pin circle
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = venue.color;
+  ctx.fill();
+
+  // White border
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Show count badge
+  if (venue.shows > 1) {
+    ctx.beginPath();
+    ctx.arc(x + r * 0.7, y - r * 0.7, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 8px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(venue.shows, x + r * 0.7, y - r * 0.7);
+  }
+
+  // Tooltip on hover
+  if (hovered) {
+    const text = venue.name;
+    const subtext = venue.area + '  ·  ' + venue.shows + ' show' + (venue.shows !== 1 ? 's' : '') + (venue.free ? '  ·  Free' : '');
+    const pad = 12, lineH = 18;
+    const tw = Math.max(ctx.measureText(text).width, ctx.measureText(subtext).width) + pad * 2;
+    const th = lineH * 2 + pad * 1.5;
+
+    let tx = x - tw / 2, ty = y - r - th - 10;
+    if (tx < 8) tx = 8;
+    if (ty < 8) ty = 8;
+
+    // Card bg
+    ctx.fillStyle = '#1a1a2e';
+    roundRect(ctx, tx, ty, tw, th, 8);
+    ctx.fill();
+
+    // Arrow
+    ctx.beginPath();
+    ctx.moveTo(x - 6, y - r - 10);
+    ctx.lineTo(x + 6, y - r - 10);
+    ctx.lineTo(x, y - r - 4);
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fill();
+
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 12px DM Sans, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(text, tx + pad, ty + pad * 0.75);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '11px DM Sans, sans-serif';
+    ctx.fillText(subtext, tx + pad, ty + pad * 0.75 + lineH);
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function setupMapEvents() {
+  const canvas = document.getElementById('mapCanvas');
+  if (!canvas || canvas._mapEventsSet) return;
+  canvas._mapEventsSet = true;
+
+  // Mouse move - hover detection
+  canvas.addEventListener('mousemove', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const W = canvas.width, H = canvas.height;
+    const venues = getFilteredVenues();
+    let found = null;
+
+    venues.forEach((v, i) => {
+      const pos = latLngToXY(v.lat, v.lng, W, H);
+      const sx = pos.x * mapScale + mapOffsetX;
+      const sy = pos.y * mapScale + mapOffsetY;
+      const r = 6 + Math.min(v.shows, 4) * 2;
+      const dist = Math.sqrt((mx - sx) ** 2 + (my - sy) ** 2);
+      if (dist < r + 8) found = i;
+    });
+
+    if (found !== mapHovered) {
+      mapHovered = found;
+      canvas.style.cursor = found !== null ? 'pointer' : (mapDragging ? 'grabbing' : 'grab');
+      drawMap();
+    }
+
+    // Drag
+    if (mapDragging) {
+      mapOffsetX = mapDragOX + (e.clientX - mapDragStartX);
+      mapOffsetY = mapDragOY + (e.clientY - mapDragStartY);
+      drawMap();
+    }
+  });
+
+  canvas.addEventListener('mousedown', function(e) {
+    mapDragging = true;
+    mapDragStartX = e.clientX; mapDragStartY = e.clientY;
+    mapDragOX = mapOffsetX; mapDragOY = mapOffsetY;
+    canvas.style.cursor = 'grabbing';
+  });
+
+  canvas.addEventListener('mouseup', function(e) {
+    const moved = Math.abs(e.clientX - mapDragStartX) + Math.abs(e.clientY - mapDragStartY);
+    mapDragging = false;
+    canvas.style.cursor = mapHovered !== null ? 'pointer' : 'grab';
+
+    // Click = open drawer
+    if (moved < 5 && mapHovered !== null) {
+      const venues = getFilteredVenues();
+      openVenueDrawer(venues[mapHovered]);
+    }
+  });
+
+  canvas.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    const newScale = Math.max(0.5, Math.min(4, mapScale + delta));
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    mapOffsetX = mx - (mx - mapOffsetX) * (newScale / mapScale);
+    mapOffsetY = my - (my - mapOffsetY) * (newScale / mapScale);
+    mapScale = newScale;
+    drawMap();
+  }, { passive: false });
+
+  // Resize
+  window.addEventListener('resize', function() {
+    if (document.getElementById('mapPanel').classList.contains('active')) {
+      renderMap();
+    }
+  });
+}
+
+function mapZoom(dir) {
+  const canvas = document.getElementById('mapCanvas');
+  const newScale = Math.max(0.5, Math.min(4, mapScale + dir * 0.25));
+  const cx = canvas.width / 2, cy = canvas.height / 2;
+  mapOffsetX = cx - (cx - mapOffsetX) * (newScale / mapScale);
+  mapOffsetY = cy - (cy - mapOffsetY) * (newScale / mapScale);
+  mapScale = newScale;
+  drawMap();
+}
+
+function toggleMapFilter(btn, filter) {
+  mapActiveFilter = filter;
+  document.querySelectorAll('.map-filter-pill').forEach(p => p.classList.remove('on'));
+  btn.classList.add('on');
+  const filtered = getFilteredVenues();
+  document.getElementById('mapCount').textContent = filtered.length + ' venues';
+  drawMap();
+}
+
+function openVenueDrawer(venue) {
+  const show = SHOWS.find(s => s.venue === venue.name) || SHOWS[0];
+  document.getElementById('dVenue').textContent = venue.name + '  ·  ' + venue.area;
+  document.getElementById('dArtist').textContent = show.artist;
+  document.getElementById('dMeta').textContent = show.date + '  ·  ' + show.time + '  ·  ' + (show.price === 0 ? 'Free' : '$' + show.price);
+  document.getElementById('dTags').innerHTML = show.tags.map(t => '<span class="tag">' + t + '</span>').join('');
+  document.getElementById('dTickets').onclick = function() { openModal(show.id); };
+  document.getElementById('venueDrawer').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('venueDrawer').classList.remove('open');
+}
+
+function renderWeekend(){
+  const day=(label,shows)=>`<div class="weekend-day"><div class="wday-head">${label}</div><div class="wshows">${shows.map(s=>`<div class="wshow"><div class="wtime">${s.time}</div><div><div class="wname">${s.name}</div><div class="wmeta">${s.meta}</div></div></div>`).join('')}</div></div>`;
+  document.getElementById('wGrid').innerHTML=
+    day('Saturday · Mar 8',[{time:'8:00 PM',name:'Japanese Breakfast',meta:'Terminal 5, Manhattan · $40'},{time:'10:00 PM',name:'Fela Kuti Tribute',meta:"SOB's, Manhattan · $22"}])+
+    day('Sunday · Mar 9',[{time:'3:00 PM',name:'Free Jazz Afternoon',meta:'Clam Broth, Hoboken · Free'},{time:'8:30 PM',name:'Nilüfer Yanya',meta:'Rough Trade, Brooklyn · $20'}]);
+}
+
+function renderWishlist(){
+  const shows=SHOWS.filter(s=>saved.has(s.id)), el=document.getElementById('wishlistContent');
+  if(!shows.length){ el.innerHTML=`<div class="empty-state"><div class="empty-icon">♡</div><div class="empty-title">Nothing saved yet</div><div class="empty-sub">Tap the heart on any show to save it here</div></div>`; return; }
+  el.innerHTML='<div class="shows-grid" style="margin-top:24px">'+shows.map((s,i)=>cardHTML(s,i)).join('')+'</div>';
+}
+
+function onType(){
+  const val=document.getElementById('artistInput').value.trim().toLowerCase();
+  const dd=document.getElementById('acDrop'); acHL=-1;
+  if(!val){ dd.classList.remove('open'); return; }
+  const hits=ARTIST_DB.filter(a=>a.name.toLowerCase().includes(val)&&!myArtists.includes(a.name)).slice(0,6);
+  if(!hits.length){ dd.classList.remove('open'); return; }
+  dd.innerHTML=hits.map((a,i)=>{
+    const idx=a.name.toLowerCase().indexOf(val);
+    const hi=a.name.slice(0,idx)+'<strong>'+a.name.slice(idx,idx+val.length)+'</strong>'+a.name.slice(idx+val.length);
+    return `<div class="ac-item" data-name="${a.name}" onmousedown="selectArtist('${a.name.replace(/'/g,"\\'")}')"><span class="ac-name">${hi}</span><span class="ac-genre">${a.genre}</span></div>`;
+  }).join('');
+  dd.classList.add('open');
+}
+
+function onKey(e){
+  const dd=document.getElementById('acDrop'), items=dd.querySelectorAll('.ac-item');
+  if(e.key==='ArrowDown'){ e.preventDefault(); acHL=Math.min(acHL+1,items.length-1); items.forEach((el,i)=>el.classList.toggle('hl',i===acHL)); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); acHL=Math.max(acHL-1,0); items.forEach((el,i)=>el.classList.toggle('hl',i===acHL)); }
+  else if(e.key==='Enter'){ if(acHL>=0&&items[acHL]) selectArtist(items[acHL].dataset.name); else{ const v=document.getElementById('artistInput').value.trim(); if(v) selectArtist(v); } }
+  else if(e.key==='Escape') dd.classList.remove('open');
+}
+
+function selectArtist(name){
+  if(!myArtists.includes(name)){ myArtists.push(name); renderTags(); renderRecs(); showToast('Added '+name); }
+  document.getElementById('artistInput').value='';
+  document.getElementById('acDrop').classList.remove('open');
+}
+
+function removeArtist(name){ myArtists=myArtists.filter(a=>a!==name); renderTags(); renderRecs(); }
+
+function renderTags(){
+  document.getElementById('artistTags').innerHTML=myArtists.map(a=>`
+    <div class="artist-tag">${a}
+      <button onclick="removeArtist('${a.replace(/'/g,"\\'")}')">
+        <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`).join('');
+}
+
+document.addEventListener('click',e=>{ if(!e.target.closest('.autocomplete-wrap')) document.getElementById('acDrop').classList.remove('open'); });
+
+function toggleF(btn){ btn.classList.toggle('active'); }
+function filterDate(btn){ document.querySelectorAll('.dpill').forEach(p=>p.classList.remove('active')); btn.classList.add('active'); showToast('Showing '+btn.textContent.toLowerCase()); }
+
+function toggleFree(btn){
+  btn.classList.toggle('on');
+  const isFreeOnly = btn.classList.contains('on');
+  document.getElementById('budgetWrap').classList.toggle('dimmed', isFreeOnly);
+  showToast(isFreeOnly ? 'Showing free shows only' : 'Showing all prices');
+}
+
+function onBudget(slider){
+  const val = parseInt(slider.value);
+  const pct = (val / 1000) * 100;
+  document.getElementById('sliderFill').style.width = pct + '%';
+  document.getElementById('budgetVal').textContent = val >= 1000 ? '$1,000+' : '$' + val.toLocaleString();
+  // turn off splurge mode if slider is moved
+  const splurge = document.getElementById('splurgeBtn');
+  if(splurge.classList.contains('on')){ splurge.classList.remove('on'); document.getElementById('splurgeLabel').textContent = 'Splurge Mode'; }
+}
+
+function toggleSplurge(){
+  const btn = document.getElementById('splurgeBtn');
+  const slider = document.getElementById('budgetSlider');
+  btn.classList.toggle('on');
+  const on = btn.classList.contains('on');
+  document.getElementById('splurgeLabel').textContent = on ? 'Splurge Mode ON' : 'Splurge Mode';
+  if(on){
+    slider.value = 1000;
+    document.getElementById('sliderFill').style.width = '100%';
+    document.getElementById('budgetVal').textContent = 'No limit 🤑';
+    showToast('Splurge Mode activated 🤑');
+  } else {
+    document.getElementById('budgetVal').textContent = '$1,000+';
+    showToast('Back to earth 😅');
+  }
+}
+function surpriseMe(){ const s=SHOWS[Math.floor(Math.random()*SHOWS.length)]; openModal(s.id); }
+
+let toastTimer;
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2500); }
+</script>
+</body>
+</html>

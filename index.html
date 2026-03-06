@@ -745,12 +745,12 @@ nav button.active { background: var(--accent-light); color: var(--accent); }
     <div class="s-section">
       <div class="s-label">Date</div>
       <div class="date-grid">
-        <button class="dpill active" onclick="filterDate(this)">Tonight</button>
+        <button class="dpill" onclick="filterDate(this)">Tonight</button>
         <button class="dpill" onclick="filterDate(this)">Tomorrow</button>
         <button class="dpill" onclick="filterDate(this)">Weekend</button>
         <button class="dpill" onclick="filterDate(this)">This Week</button>
         <button class="dpill" onclick="filterDate(this)">This Month</button>
-        <button class="dpill" onclick="filterDate(this)">All Shows</button>
+        <button class="dpill active" onclick="filterDate(this)">All Shows</button>
       </div>
     </div>
 
@@ -1020,7 +1020,7 @@ function normalizeTicketmaster(event) {
     artist: attraction ? attraction.name : event.name,
     support: '',
     venue: venue ? venue.name : 'Unknown Venue',
-    area: venue && venue.city ? venue.city.name : '',
+    area: getNeighborhood(venue && venue.location ? parseFloat(venue.location.latitude) : null, venue && venue.location ? parseFloat(venue.location.longitude) : null, venue && venue.city ? venue.city.name : ''),
     address: venue ? (venue.address && venue.address.line1) : '',
     lat: venue && venue.location ? parseFloat(venue.location.latitude) : null,
     lng: venue && venue.location ? parseFloat(venue.location.longitude) : null,
@@ -1041,14 +1041,7 @@ function normalizeTicketmaster(event) {
     source: 'ticketmaster',
     dow: '', day: '',
     capacity: venue && venue.upcomingEvents ? null : null,
-    venueSize: (function() {
-      // Estimate from venue name heuristics — TM doesn't always expose capacity
-      const name = (venue ? venue.name : '').toLowerCase();
-      if (name.includes('stadium') || name.includes('arena') || name.includes('garden') || name.includes('amphitheater')) return 'large';
-      if (name.includes('theater') || name.includes('theatre') || name.includes('hall') || name.includes('center')) return 'medium';
-      if (name.includes('club') || name.includes('bar') || name.includes('lounge') || name.includes('café') || name.includes('cafe')) return 'intimate';
-      return 'small';
-    })(),
+    venueSize: getVenueSize(venue ? venue.name : '', venue && venue.upcomingEvents ? venue.upcomingEvents._total : null),
   };
 }
 
@@ -1162,6 +1155,75 @@ function addDateParts(show) {
   return show;
 }
 
+// Venue size lookup — known venues + heuristics
+const KNOWN_VENUE_SIZES = {
+  // Large (5k+)
+  'madison square garden': 'large', 'barclays center': 'large', 'yankee stadium': 'large',
+  'citi field': 'large', 'metlife stadium': 'large', 'prudential center': 'large',
+  'ubs arena': 'large', 'jones beach': 'large', 'pnc bank arts center': 'large',
+  'forest hills stadium': 'large', 'pier 17': 'large', 'brooklyn mirage': 'large',
+  'terminal 5': 'large', 'hammerstein ballroom': 'large', 'kings theatre': 'large',
+  'radio city music hall': 'large', 'beacon theatre': 'large',
+  // Medium (1k-5k)
+  'brooklyn steel': 'medium', 'warsaw': 'medium', 'elsewhere': 'medium',
+  'music hall williamsburg': 'medium', 'irving plaza': 'medium', 'bowery ballroom': 'medium',
+  'brooklyn paramount': 'medium', 'playstation theater': 'medium', 'webster hall': 'medium',
+  'capitol theatre': 'medium', 'wellmont theatre': 'medium', 'house of blues': 'medium',
+  'paramount': 'medium', 'apollo theater': 'medium', 'town hall': 'medium',
+  // Small (300-1k)
+  'le poisson rouge': 'small', 'mercury lounge': 'small', 'rough trade': 'small',
+  'empty bottle': 'small', 'schubas': 'small', 'lincoln hall': 'small',
+  'bowery electric': 'small', 'pianos': 'small', 'rockwood music hall': 'small',
+  'nublu': 'small', 'knitting factory': 'small', 'sultan room': 'small',
+  'white eagle hall': 'small', 'maxwell': 'small',
+  // Intimate (<300)
+  "baby's all right": 'intimate', "pete's candy store": 'intimate', 'berlin': 'intimate',
+  'groove on grove': 'intimate', 'clam broth': 'intimate', '10th and willow': 'intimate',
+  "sob's": 'intimate', 'zinc bar': 'intimate', 'smalls jazz': 'intimate',
+  'cornelia street': 'intimate', 'nuyorican': 'intimate',
+};
+
+function getVenueSize(venueName, totalEvents) {
+  if (!venueName) return 'small';
+  const lower = venueName.toLowerCase();
+  // Check known venues first
+  const knownKeys = Object.keys(KNOWN_VENUE_SIZES);
+  for (let i = 0; i < knownKeys.length; i++) {
+    if (lower.includes(knownKeys[i])) return KNOWN_VENUE_SIZES[knownKeys[i]];
+  }
+  // Heuristics
+  if (lower.includes('stadium') || lower.includes('arena') || lower.includes('amphitheater') || lower.includes('mirage')) return 'large';
+  if (lower.includes('theatre') || lower.includes('theater') || lower.includes('hall') || lower.includes('paramount') || lower.includes('ballroom')) return 'medium';
+  if (lower.includes('bar') || lower.includes('lounge') || lower.includes('cafe') || lower.includes('café') || lower.includes('tavern') || lower.includes('pub')) return 'intimate';
+  return 'small';
+}
+
+// NYC neighborhood bounding boxes [minLat, maxLat, minLng, maxLng]
+const NYC_HOODS = [
+  { name:'Williamsburg',  minLat:40.700, maxLat:40.725, minLng:-73.975, maxLng:-73.930 },
+  { name:'Bushwick',      minLat:40.690, maxLat:40.715, minLng:-73.940, maxLng:-73.900 },
+  { name:'Greenpoint',    minLat:40.724, maxLat:40.745, minLng:-73.960, maxLng:-73.930 },
+  { name:'LES',           minLat:40.713, maxLat:40.722, minLng:-73.995, maxLng:-73.975 },
+  { name:'East Village',  minLat:40.722, maxLat:40.732, minLng:-73.995, maxLng:-73.975 },
+  { name:'West Village',  minLat:40.730, maxLat:40.740, minLng:-74.010, maxLng:-73.997 },
+  { name:'Brooklyn',      minLat:40.570, maxLat:40.740, minLng:-74.050, maxLng:-73.850 },
+  { name:'Queens',        minLat:40.680, maxLat:40.800, minLng:-73.960, maxLng:-73.700 },
+  { name:'Hoboken',       minLat:40.730, maxLat:40.760, minLng:-74.045, maxLng:-74.020 },
+  { name:'Jersey City',   minLat:40.680, maxLat:40.730, minLng:-74.080, maxLng:-74.030 },
+  { name:'Bronx',         minLat:40.785, maxLat:40.920, minLng:-73.940, maxLng:-73.750 },
+  { name:'Manhattan',     minLat:40.695, maxLat:40.882, minLng:-74.020, maxLng:-73.910 },
+];
+
+function getNeighborhood(lat, lng, fallback) {
+  if (!lat || !lng) return fallback || 'New York';
+  for (const h of NYC_HOODS) {
+    if (lat >= h.minLat && lat <= h.maxLat && lng >= h.minLng && lng <= h.maxLng) {
+      return h.name;
+    }
+  }
+  return fallback || 'New York';
+}
+
 function dedupeShows(shows) {
   // Dedupe by artist+venue+date
   const seen = new Set();
@@ -1178,8 +1240,10 @@ function dedupeShows(shows) {
 async function fetchTicketmaster(city) {
   try {
     const today = new Date().toISOString().split('T')[0] + 'T00:00:00Z';
-    const pages = [0, 1, 2];
+    const pages = [0, 1, 2, 3, 4];
     const requests = pages.map(function(page) {
+      const endDate = new Date(); endDate.setDate(endDate.getDate() + 90);
+      const endDateTime = endDate.toISOString().split('T')[0] + 'T23:59:59Z';
       const url = 'https://app.ticketmaster.com/discovery/v2/events.json?' +
         'classificationSegmentId=KZFzniwnSyZfZ7v7nJ' +
         '&latlong=' + city.lat + ',' + city.lng +
@@ -1189,6 +1253,7 @@ async function fetchTicketmaster(city) {
         '&page=' + page +
         '&sort=date,asc' +
         '&startDateTime=' + today +
+        '&endDateTime=' + endDateTime +
         '&apikey=' + API_KEYS.ticketmaster;
       return fetch(url).then(function(r) { return r.json(); });
     });
@@ -1212,7 +1277,7 @@ async function fetchTicketmaster(city) {
       const segName = seg ? seg.name.toLowerCase() : '';
       if (segName && segName !== 'music') return false;
       const name = (e.name || '').toLowerCase();
-      const theatreWords = ['musical','theatre','theater','ballet','opera','circus','comedy','magic','spoken word','broadway','spelling bee','drag show'];
+      const theatreWords = ['musical','theatre','theater','ballet','opera','circus','comedy','magic','spoken word','broadway','spelling bee','drag show','wrestling','wwe','ufc','mma','boxing','nba','nfl','nhl','mlb','soccer','football','basketball','hockey','baseball'];
       if (theatreWords.some(function(w){ return name.includes(w); })) return false;
       return true;
     });
@@ -1378,6 +1443,11 @@ async function fetchShowsForCity(city) {
     liveShows = dedupeShows(allShows);
 
     console.log('Total merged shows:', liveShows.length);
+    // Debug: log unique areas
+    const areas = [...new Set(liveShows.map(s => s.area))].sort();
+    console.log('Areas in results:', areas.join(', '));
+    // Debug: log venue name + coords for first 10 shows
+    liveShows.slice(0,10).forEach(s => console.log(s.venue, '|', s.area, '| lat:', s.lat, 'lng:', s.lng));
     if (liveShows.length > 0) {
       renderShows(liveShows);
       showToast(liveShows.length + ' live shows loaded for ' + city.name);
@@ -1599,7 +1669,7 @@ function cardHTML(s,i){
   const free=s.price===0, isGoing=going.has(s.id), isSaved=saved.has(s.id);
   const delay=(i%6)*40;
   const badges=[free?'<span class="badge badge-free">Free</span>':'', isGoing?'<span class="badge badge-going">Going ✓</span>':''].filter(Boolean).join('');
-  return `<div class="show-card" style="animation-delay:${delay}ms" onclick="openModal(${s.id})">
+  return `<div class="show-card" style="animation-delay:${delay}ms" onclick="handleShowClick(event,${s.id},'${(s.url||'').replace(/'/g,'')}')" >
     <div class="card-stripe" style="background:${s.color}"></div>
     <div class="card-body">
       <div class="card-badges">${badges||'<span></span>'}</div>
@@ -1626,7 +1696,7 @@ function cardHTML(s,i){
 
 function listHTML(s,i){
   const free=s.price===0;
-  return `<div class="list-item" style="animation-delay:${(i%8)*30}ms" onclick="openModal(${s.id})">
+  return `<div class="list-item" style="animation-delay:${(i%8)*30}ms" data-url="${s.url||''}" data-id="${s.id}" onclick="handleShowClick(event,this)">
     <div class="list-date"><div class="list-day">${s.day}</div><div class="list-dow">${s.dow}</div></div>
     <div class="list-stripe" style="background:${s.color}"></div>
     <div class="list-main">
@@ -1645,6 +1715,16 @@ function setView(v){
   document.getElementById('gBtn').classList.toggle('active',v==='grid');
   document.getElementById('lBtn').classList.toggle('active',v==='list');
   renderShows();
+}
+
+function handleShowClick(event, el) {
+  const url = el.getAttribute('data-url');
+  const id = parseInt(el.getAttribute('data-id'));
+  if (url && url.startsWith('http')) {
+    window.open(url, '_blank');
+  } else {
+    openModal(id);
+  }
 }
 
 function openModal(id){
@@ -2130,7 +2210,87 @@ function renderTags(){
 
 document.addEventListener('click',e=>{ if(!e.target.closest('.autocomplete-wrap')) document.getElementById('acDrop').classList.remove('open'); });
 
-function toggleF(btn){ btn.classList.toggle('active'); }
+function toggleF(btn, type) {
+  const group = btn.closest('.filter-group');
+  const pills = group ? group.querySelectorAll('.fpill') : [];
+  const isAll = btn.textContent.trim() === 'All';
+
+  if (isAll) {
+    // Clicking All deselects everything else, activates All
+    pills.forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+  } else {
+    // Deactivate All
+    pills.forEach(p => { if (p.textContent.trim() === 'All') p.classList.remove('active'); });
+    // Toggle this button
+    btn.classList.toggle('active');
+    // If nothing selected, re-activate All
+    const anyActive = Array.from(pills).some(p => p.classList.contains('active'));
+    if (!anyActive) {
+      pills.forEach(p => { if (p.textContent.trim() === 'All') p.classList.add('active'); });
+    }
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  const list = liveShows.length > 0 ? liveShows : SHOWS;
+
+  // Get active areas (multi-select)
+  const areaGroup = document.getElementById('areaFilterGroup');
+  const activeAreas = areaGroup
+    ? Array.from(areaGroup.querySelectorAll('.fpill.active'))
+        .map(b => b.textContent.trim())
+        .filter(a => a !== 'All')
+    : [];
+
+  // Get active genres (multi-select)
+  const genrePills = document.querySelectorAll('.filter-group .fpill[onclick*="genre"]');
+  const activeGenres = Array.from(genrePills)
+    .filter(b => b.classList.contains('active') && b.textContent.trim() !== 'All')
+    .map(b => b.textContent.trim().toLowerCase());
+
+  // Get price filter
+  const freeOnly = document.getElementById('freeToggle') && document.getElementById('freeToggle').classList.contains('on');
+  const maxBudget = parseInt(document.getElementById('budgetSlider') ? document.getElementById('budgetSlider').value : 1000);
+
+  let filtered = list;
+
+  if (activeAreas.length) {
+    filtered = filtered.filter(function(s) {
+      return activeAreas.some(a => (s.area || '').toLowerCase().includes(a.toLowerCase()));
+    });
+  }
+
+  if (activeGenres.length) {
+    filtered = filtered.filter(function(s) {
+      return activeGenres.some(g =>
+        (s.genre || '').toLowerCase().includes(g) ||
+        (s.tags || []).some(t => t.toLowerCase().includes(g))
+      );
+    });
+  }
+
+  if (freeOnly) {
+    filtered = filtered.filter(function(s) { return s.price === 0 || s.priceDisplay === 'Free'; });
+  } else if (maxBudget < 1000) {
+    filtered = filtered.filter(function(s) {
+      if (s.price === 0 || s.priceDisplay === 'Free') return true;
+      if (s.price == null) return true; // include unknown prices
+      return s.price <= maxBudget;
+    });
+  }
+
+  // Venue size filter
+  if (activVenueSize && activVenueSize !== 'all') {
+    filtered = filtered.filter(function(s) {
+      return s.venueSize === activVenueSize;
+    });
+  }
+
+  renderShows(filtered.length ? filtered : []);
+  if (!filtered.length) showToast('No shows match these filters');
+}
 function filterDate(btn){ document.querySelectorAll('.dpill').forEach(p=>p.classList.remove('active')); btn.classList.add('active'); showToast('Showing '+btn.textContent.toLowerCase()); }
 
 let activVenueSize = 'all';
@@ -2138,17 +2298,14 @@ function toggleVenueSize(btn, size) {
   activVenueSize = size;
   document.querySelectorAll('.filter-group button[onclick*="toggleVenueSize"]').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  const list = liveShows.length > 0 ? liveShows : SHOWS;
-  if (size === 'all') { renderShows(list); return; }
-  const filtered = list.filter(function(s) { return !s.venueSize || s.venueSize === size; });
-  renderShows(filtered.length ? filtered : list);
-  showToast('Showing ' + size + ' venues');
+  applyFilters();
 }
 
 function toggleFree(btn){
   btn.classList.toggle('on');
   const isFreeOnly = btn.classList.contains('on');
   document.getElementById('budgetWrap').classList.toggle('dimmed', isFreeOnly);
+  applyFilters();
   showToast(isFreeOnly ? 'Showing free shows only' : 'Showing all prices');
 }
 
@@ -2160,6 +2317,7 @@ function onBudget(slider){
   // turn off splurge mode if slider is moved
   const splurge = document.getElementById('splurgeBtn');
   if(splurge.classList.contains('on')){ splurge.classList.remove('on'); document.getElementById('splurgeLabel').textContent = 'Splurge Mode'; }
+  applyFilters();
 }
 
 function toggleSplurge(){
